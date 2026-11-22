@@ -6,12 +6,18 @@
 
 "use strict";
 
+// ==========================================
 // CONFIGURATION
+// ==========================================
+
 const API_URL = "https://jesssy-ai.onrender.com";
 const MAX_HISTORY = 20;
 const STORAGE_KEY = "jessy_ai_conversations_v1";
 
+// ==========================================
 // HTML ELEMENTS
+// ==========================================
+
 const menuButton = document.querySelector(".menu-toggle");
 const nav = document.querySelector(".nav");
 
@@ -22,22 +28,25 @@ const chatMessages = document.getElementById("chatMessages");
 const newChatButton = document.getElementById("newChatButton");
 const chatSearch = document.getElementById("chatSearch");
 const exportChatButton = document.getElementById("exportChatButton");
-// VOICE CONTROLS
+const conversationList = document.getElementById("conversationList");
+
 const voiceInputButton = document.getElementById("voiceInputButton");
 const voiceOutputButton = document.getElementById("voiceOutputButton");
 
-let voiceEnabled = false;
-let recognition = null;
-let isListening = false;
-const conversationList = document.getElementById("conversationList");
-
 const yearElement = document.getElementById("year");
 
+// ==========================================
 // STATE
+// ==========================================
+
 let conversations = [];
 let activeChatId = null;
 let chatHistory = [];
 let isSending = false;
+
+let voiceEnabled = false;
+let recognition = null;
+let isListening = false;
 
 // ==========================================
 // INITIALIZATION
@@ -48,7 +57,10 @@ if (yearElement) {
 }
 
 const previewLabel = document.querySelector(".preview-label");
-if (previewLabel) previewLabel.textContent = "LIVE AI";
+
+if (previewLabel) {
+    previewLabel.textContent = "LIVE AI";
+}
 
 const chatStatus = document.querySelector(".chat-top small");
 
@@ -77,15 +89,27 @@ if (demoDescription) {
 // ==========================================
 
 if (menuButton && nav) {
+
     menuButton.addEventListener("click", () => {
+
         const isOpen = nav.classList.toggle("open");
-        menuButton.setAttribute("aria-expanded", String(isOpen));
+
+        menuButton.setAttribute(
+            "aria-expanded",
+            String(isOpen)
+        );
     });
 
     nav.querySelectorAll("a").forEach(link => {
+
         link.addEventListener("click", () => {
+
             nav.classList.remove("open");
-            menuButton.setAttribute("aria-expanded", "false");
+
+            menuButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
         });
     });
 }
@@ -95,6 +119,7 @@ if (menuButton && nav) {
 // ==========================================
 
 if (window.marked) {
+
     window.marked.setOptions({
         breaks: true,
         gfm: true
@@ -106,12 +131,15 @@ if (window.marked) {
 // ==========================================
 
 function showWelcomeMessage() {
+
     if (!chatMessages) return;
 
     chatMessages.replaceChildren();
 
     const welcome = document.createElement("div");
+
     welcome.className = "message assistant";
+
     welcome.textContent =
         "Hi! I'm JESSY AI. Ask me what you'd like to learn, create or build.";
 
@@ -123,13 +151,20 @@ function showWelcomeMessage() {
 // ==========================================
 
 function saveConversations() {
+
     try {
+
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(conversations)
         );
+
     } catch (error) {
-        console.error("Unable to save conversations:", error);
+
+        console.error(
+            "Unable to save conversations:",
+            error
+        );
     }
 }
 
@@ -138,8 +173,11 @@ function saveConversations() {
 // ==========================================
 
 function loadConversations() {
+
     try {
+
         const saved = localStorage.getItem(STORAGE_KEY);
+
         const parsed = saved ? JSON.parse(saved) : [];
 
         conversations = Array.isArray(parsed)
@@ -151,12 +189,19 @@ function loadConversations() {
             : [];
 
     } catch (error) {
-        console.error("Unable to load conversations:", error);
+
+        console.error(
+            "Unable to load conversations:",
+            error
+        );
+
         conversations = [];
     }
 
     if (conversations.length === 0) {
+
         createNewChat();
+
         return;
     }
 
@@ -167,6 +212,7 @@ function loadConversations() {
     activeChatId = conversations[0].id;
 
     renderConversations();
+
     openConversation(activeChatId);
 }
 
@@ -175,30 +221,44 @@ function loadConversations() {
 // ==========================================
 
 function createNewChat() {
+
     if (isSending) return;
 
     const conversation = {
+
         id: Date.now().toString() +
             Math.random().toString(36).slice(2),
+
         title: "New Chat",
+
         messages: [],
+
         updatedAt: Date.now()
     };
 
     conversations.unshift(conversation);
 
     activeChatId = conversation.id;
+
     chatHistory = [];
 
     saveConversations();
+
     renderConversations();
+
     showWelcomeMessage();
 
-    if (chatInput) chatInput.focus();
+    if (chatInput) {
+        chatInput.focus();
+    }
 }
 
 if (newChatButton) {
-    newChatButton.addEventListener("click", createNewChat);
+
+    newChatButton.addEventListener(
+        "click",
+        createNewChat
+    );
 }
 
 // ==========================================
@@ -206,6 +266,7 @@ if (newChatButton) {
 // ==========================================
 
 function openConversation(id) {
+
     if (isSending) return;
 
     const conversation = conversations.find(
@@ -216,24 +277,33 @@ function openConversation(id) {
 
     activeChatId = id;
 
-    chatHistory = conversation.messages
-        .slice(-MAX_HISTORY);
+    chatHistory = conversation.messages.slice(-MAX_HISTORY);
 
     if (chatMessages) {
+
         chatMessages.replaceChildren();
 
         if (conversation.messages.length === 0) {
+
             showWelcomeMessage();
+
         } else {
+
             conversation.messages.forEach(message => {
-                addMessage(message.content, message.role);
+
+                addMessage(
+                    message.content,
+                    message.role
+                );
             });
         }
     }
 
     renderConversations();
 
-    if (chatInput) chatInput.focus();
+    if (chatInput) {
+        chatInput.focus();
+    }
 }
 
 // ==========================================
@@ -241,6 +311,7 @@ function openConversation(id) {
 // ==========================================
 
 function renderConversations() {
+
     if (!conversationList) return;
 
     conversationList.replaceChildren();
@@ -254,6 +325,7 @@ function renderConversations() {
     );
 
     const filteredConversations = conversations.filter(chat => {
+
         const titleMatch = String(chat.title || "")
             .toLowerCase()
             .includes(searchTerm);
@@ -268,6 +340,7 @@ function renderConversations() {
     });
 
     filteredConversations.forEach(conversation => {
+
         const item = document.createElement("div");
 
         item.className = "conversation-item";
@@ -277,47 +350,67 @@ function renderConversations() {
         }
 
         const title = document.createElement("button");
+
         title.type = "button";
         title.className = "conversation-title";
-        title.textContent = conversation.title || "New Chat";
-        title.title = conversation.title || "New Chat";
+
+        title.textContent =
+            conversation.title || "New Chat";
+
+        title.title =
+            conversation.title || "New Chat";
 
         title.addEventListener("click", () => {
             openConversation(conversation.id);
         });
 
         const actions = document.createElement("div");
+
         actions.className = "conversation-actions";
 
         const renameButton = document.createElement("button");
+
         renameButton.type = "button";
         renameButton.textContent = "✎";
         renameButton.title = "Rename conversation";
-        renameButton.setAttribute("aria-label", "Rename conversation");
+
+        renameButton.setAttribute(
+            "aria-label",
+            "Rename conversation"
+        );
 
         renameButton.addEventListener("click", () => {
             renameConversation(conversation.id);
         });
 
         const deleteButton = document.createElement("button");
+
         deleteButton.type = "button";
         deleteButton.textContent = "×";
         deleteButton.title = "Delete conversation";
-        deleteButton.setAttribute("aria-label", "Delete conversation");
+
+        deleteButton.setAttribute(
+            "aria-label",
+            "Delete conversation"
+        );
 
         deleteButton.addEventListener("click", () => {
             deleteConversation(conversation.id);
         });
 
         actions.append(renameButton, deleteButton);
+
         item.append(title, actions);
 
         conversationList.appendChild(item);
     });
 
     if (filteredConversations.length === 0) {
+
         const empty = document.createElement("p");
+
         empty.textContent = "No conversations found.";
+
         empty.style.color = "#8494ad";
         empty.style.fontSize = "12px";
 
@@ -330,6 +423,7 @@ function renderConversations() {
 // ==========================================
 
 function renameConversation(id) {
+
     if (isSending) return;
 
     const conversation = conversations.find(
@@ -348,14 +442,18 @@ function renameConversation(id) {
     const cleanedTitle = newTitle.trim();
 
     if (!cleanedTitle) {
+
         alert("Please enter a valid name.");
+
         return;
     }
 
     conversation.title = cleanedTitle.slice(0, 60);
+
     conversation.updatedAt = Date.now();
 
     saveConversations();
+
     renderConversations();
 }
 
@@ -364,6 +462,7 @@ function renameConversation(id) {
 // ==========================================
 
 function deleteConversation(id) {
+
     if (isSending) return;
 
     const confirmed = confirm(
@@ -377,17 +476,24 @@ function deleteConversation(id) {
     );
 
     if (activeChatId === id) {
+
         activeChatId = null;
+
         chatHistory = [];
     }
 
     saveConversations();
 
     if (conversations.length === 0) {
+
         createNewChat();
+
     } else if (!activeChatId) {
+
         openConversation(conversations[0].id);
+
     } else {
+
         renderConversations();
     }
 }
@@ -397,26 +503,40 @@ function deleteConversation(id) {
 // ==========================================
 
 async function copyCode(code, button) {
+
     try {
+
         await navigator.clipboard.writeText(code);
+
         button.textContent = "Copied!";
 
     } catch (error) {
+
         console.error("Copy failed:", error);
 
         const textarea = document.createElement("textarea");
+
         textarea.value = code;
+
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
 
         document.body.appendChild(textarea);
+
         textarea.select();
 
         try {
-            const successful = document.execCommand("copy");
-            button.textContent = successful ? "Copied!" : "Failed";
+
+            const successful =
+                document.execCommand("copy");
+
+            button.textContent =
+                successful ? "Copied!" : "Failed";
+
         } catch (fallbackError) {
+
             console.error(fallbackError);
+
             button.textContent = "Failed";
         }
 
@@ -424,7 +544,9 @@ async function copyCode(code, button) {
     }
 
     setTimeout(() => {
+
         button.textContent = "Copy";
+
     }, 2000);
 }
 
@@ -433,16 +555,20 @@ async function copyCode(code, button) {
 // ==========================================
 
 function formatCodeBlocks(message) {
+
     message.querySelectorAll("pre code").forEach(block => {
+
         if (window.hljs) {
             window.hljs.highlightElement(block);
         }
     });
 
     message.querySelectorAll("pre").forEach(pre => {
+
         if (pre.querySelector(".copy-code-btn")) return;
 
         const code = pre.querySelector("code");
+
         if (!code) return;
 
         const button = document.createElement("button");
@@ -452,7 +578,11 @@ function formatCodeBlocks(message) {
         button.textContent = "Copy";
 
         button.addEventListener("click", () => {
-            copyCode(code.innerText, button);
+
+            copyCode(
+                code.innerText,
+                button
+            );
         });
 
         pre.appendChild(button);
@@ -464,9 +594,11 @@ function formatCodeBlocks(message) {
 // ==========================================
 
 function addMessage(text, sender) {
+
     if (!chatMessages) return null;
 
     const message = document.createElement("div");
+
     message.className = `message ${sender}`;
 
     const content = String(text ?? "");
@@ -476,6 +608,7 @@ function addMessage(text, sender) {
         window.marked &&
         window.DOMPurify
     ) {
+
         const html = window.marked.parse(content);
 
         message.innerHTML =
@@ -484,11 +617,14 @@ function addMessage(text, sender) {
         formatCodeBlocks(message);
 
     } else {
+
         message.textContent = content;
     }
 
     chatMessages.appendChild(message);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
 
     return message;
 }
@@ -498,13 +634,17 @@ function addMessage(text, sender) {
 // ==========================================
 
 function showLoadingMessage() {
+
     const loading = document.createElement("div");
 
     loading.className = "message assistant loading";
+
     loading.textContent = "JESSY AI is thinking...";
 
     chatMessages.appendChild(loading);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
 
     return loading;
 }
@@ -514,7 +654,9 @@ function showLoadingMessage() {
 // ==========================================
 
 function updateConversationTitle(conversation, text) {
+
     if (conversation.title === "New Chat") {
+
         conversation.title = text.trim().slice(0, 35);
 
         if (text.length > 35) {
@@ -526,14 +668,47 @@ function updateConversationTitle(conversation, text) {
 }
 
 // ==========================================
+// VOICE OUTPUT FUNCTION
+// ==========================================
+
+function speakReply(text) {
+
+    if (
+        !voiceEnabled ||
+        !("speechSynthesis" in window)
+    ) {
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const cleanText = String(text)
+        .replace(/```[\s\S]*?```/g, " Code block omitted. ")
+        .replace(/[*#`_~]/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+    const speech =
+        new SpeechSynthesisUtterance(cleanText);
+
+    speech.lang = "en-IN";
+    speech.rate = 1;
+    speech.pitch = 1;
+
+    window.speechSynthesis.speak(speech);
+}
+
+// ==========================================
 // SEND MESSAGE
 // ==========================================
 
 async function sendMessage(text) {
+
     if (!text || !text.trim() || isSending) return;
 
     if (!chatMessages || !chatInput) {
+
         console.error("Chat elements missing.");
+
         return;
     }
 
@@ -550,34 +725,44 @@ async function sendMessage(text) {
     isSending = true;
 
     const sendButton = chatForm
-        ? chatForm.querySelector("button")
+        ? chatForm.querySelector('button[type="submit"]')
         : null;
 
     addMessage(text, "user");
 
     chatInput.value = "";
+
     chatInput.disabled = true;
 
-    if (sendButton) sendButton.disabled = true;
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
 
     const loadingMessage = showLoadingMessage();
 
     try {
-        const response = await fetch(`${API_URL}/chat`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                message: text,
-                history: chatHistory,
-                language: "auto"
-            })
-        });
+
+        const response = await fetch(
+            `${API_URL}/chat`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    message: text,
+                    history: chatHistory,
+                    language: "auto"
+                })
+            }
+        );
 
         const data = await response.json();
 
         if (!response.ok) {
+
             throw new Error(
                 typeof data.detail === "string"
                     ? data.detail
@@ -586,6 +771,7 @@ async function sendMessage(text) {
         }
 
         if (!data.reply) {
+
             throw new Error(
                 "JESSY AI returned an empty response."
             );
@@ -594,6 +780,7 @@ async function sendMessage(text) {
         loadingMessage.remove();
 
         addMessage(data.reply, "assistant");
+
         speakReply(data.reply);
 
         const userMessage = {
@@ -606,7 +793,11 @@ async function sendMessage(text) {
             content: data.reply
         };
 
-        chatHistory.push(userMessage, assistantMessage);
+        chatHistory.push(
+            userMessage,
+            assistantMessage
+        );
+
         chatHistory = chatHistory.slice(-MAX_HISTORY);
 
         conversation.messages.push(
@@ -617,49 +808,67 @@ async function sendMessage(text) {
         conversation.messages =
             conversation.messages.slice(-MAX_HISTORY);
 
-        updateConversationTitle(conversation, text);
+        updateConversationTitle(
+            conversation,
+            text
+        );
 
         saveConversations();
+
         renderConversations();
 
         console.log("JESSY AI response received.");
+
         console.log("AI Provider:", data.provider);
 
     } catch (error) {
+
         console.error("JESSY AI Error:", error);
 
-        if (loadingMessage) loadingMessage.remove();
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
 
         let errorMessage;
 
         if (error instanceof TypeError) {
+
             errorMessage =
                 "Unable to connect to JESSY AI. Please check your internet connection.";
+
         } else {
+
             errorMessage =
                 error.message || "Something went wrong.";
         }
 
-        addMessage("Sorry! " + errorMessage, "assistant");
+        addMessage(
+            "Sorry! " + errorMessage,
+            "assistant"
+        );
 
     } finally {
+
         isSending = false;
 
         chatInput.disabled = false;
 
-        if (sendButton) sendButton.disabled = false;
+        if (sendButton) {
+            sendButton.disabled = false;
+        }
 
         chatInput.focus();
     }
 }
 
 // ==========================================
-// CHAT FORM + ENTER KEY FIX
+// CHAT FORM + ENTER KEY
 // ==========================================
 
 if (chatForm && chatInput) {
 
-    chatForm.addEventListener("submit", function(event) {
+    chatForm.addEventListener("submit", event => {
+
         event.preventDefault();
 
         const message = chatInput.value.trim();
@@ -669,8 +878,13 @@ if (chatForm && chatInput) {
         }
     });
 
-    chatInput.addEventListener("keydown", function(event) {
-        if (event.key === "Enter") {
+    chatInput.addEventListener("keydown", event => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
             event.preventDefault();
 
             if (!isSending) {
@@ -678,54 +892,98 @@ if (chatForm && chatInput) {
             }
         }
     });
-
 }
 
-    chatInput.addEventListener("keydown", event => {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-
-            const text = chatInput.value.trim();
-
-            if (text && !isSending) {
-                sendMessage(text);
-            }
-        }
-    });
-}
 // ==========================================
-// JESSY AI - VOICE INPUT
+// VOICE INPUT
 // ==========================================
 
-const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognitionAPI =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
 if (voiceInputButton) {
 
-    if (SpeechRecognition) {
+    if (SpeechRecognitionAPI) {
 
-        recognition = new SpeechRecognition();
+        recognition = new SpeechRecognitionAPI();
 
         recognition.continuous = false;
+
         recognition.interimResults = false;
+
         recognition.lang = "en-IN";
 
         voiceInputButton.addEventListener("click", () => {
 
             if (isListening) {
+
                 recognition.stop();
+
                 return;
             }
 
             try {
-                recognition.start();
-            } catch (error) {
-                console.error("Voice input error:", error);
-            }
 
+                recognition.start();
+
+            } catch (error) {
+
+                console.error(
+                    "Voice input error:",
+                    error
+                );
+            }
         });
+
+        recognition.onstart = () => {
+
+            isListening = true;
+
+            voiceInputButton.textContent = "🔴";
+
+            voiceInputButton.title = "Listening...";
+        };
+
+        recognition.onresult = event => {
+
+            const spokenText =
+                event.results[0][0].transcript;
+
+            chatInput.value = spokenText;
+
+            chatInput.focus();
+        };
+
+        recognition.onerror = event => {
+
+            console.error(
+                "Speech recognition error:",
+                event.error
+            );
+        };
+
+        recognition.onend = () => {
+
+            isListening = false;
+
+            voiceInputButton.textContent = "🎤";
+
+            voiceInputButton.title =
+                "Speak to JESSY AI";
+        };
+
+    } else {
+
+        voiceInputButton.disabled = true;
+
+        voiceInputButton.title =
+            "Voice recognition is not supported in this browser.";
+    }
+}
+
 // ==========================================
-// JESSY AI - VOICE OUTPUT
+// VOICE OUTPUT BUTTON
 // ==========================================
 
 if (voiceOutputButton) {
@@ -742,71 +1000,29 @@ if (voiceOutputButton) {
                 ? "Turn off voice responses"
                 : "Enable voice responses";
 
-        if (!voiceEnabled && window.speechSynthesis) {
+        voiceOutputButton.setAttribute(
+            "aria-pressed",
+            String(voiceEnabled)
+        );
+
+        if (
+            !voiceEnabled &&
+            window.speechSynthesis
+        ) {
+
             window.speechSynthesis.cancel();
         }
     });
 }
 
-function speakReply(text) {
-
-    if (!voiceEnabled || !window.speechSynthesis) return;
-
-    window.speechSynthesis.cancel();
-
-    const cleanText = String(text)
-        .replace(/```[\s\S]*?```/g, " Code block omitted. ")
-        .replace(/[*#`_~]/g, "")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-
-    const speech = new SpeechSynthesisUtterance(cleanText);
-
-    speech.lang = "en-IN";
-    speech.rate = 1;
-    speech.pitch = 1;
-
-    window.speechSynthesis.speak(speech);
-}
-        recognition.onstart = () => {
-            isListening = true;
-            voiceInputButton.textContent = "🔴";
-            voiceInputButton.title = "Listening...";
-        };
-
-        recognition.onresult = event => {
-
-            const spokenText =
-                event.results[0][0].transcript;
-
-            chatInput.value = spokenText;
-
-            if (chatInput.value.trim() && !isSending) {
-                chatForm.requestSubmit();
-            }
-        };
-
-        recognition.onerror = event => {
-            console.error("Speech recognition error:", event.error);
-        };
-
-        recognition.onend = () => {
-            isListening = false;
-            voiceInputButton.textContent = "🎤";
-            voiceInputButton.title = "Speak to JESSY AI";
-        };
-
-    } else {
-        voiceInputButton.disabled = true;
-        voiceInputButton.title =
-            "Voice recognition is not supported in this browser.";
-    }
-}
 // ==========================================
 // CHAT SEARCH
 // ==========================================
 
 if (chatSearch) {
+
     chatSearch.addEventListener("input", () => {
+
         renderConversations();
     });
 }
@@ -816,13 +1032,19 @@ if (chatSearch) {
 // ==========================================
 
 if (exportChatButton) {
+
     exportChatButton.addEventListener("click", () => {
+
         const conversation = conversations.find(
             chat => chat.id === activeChatId
         );
 
         if (!conversation) {
-            alert("Please select a conversation first.");
+
+            alert(
+                "Please select a conversation first."
+            );
+
             return;
         }
 
@@ -830,50 +1052,83 @@ if (exportChatButton) {
             !conversation.messages ||
             conversation.messages.length === 0
         ) {
-            alert("No messages available to export.");
+
+            alert(
+                "No messages available to export."
+            );
+
             return;
         }
 
         let content = "JESSY AI CONVERSATION\n";
-        content += "UBINTZE TECHNOLOGIES\n";
-        content += "====================================\n\n";
-        content += "Title: " + conversation.title + "\n";
-        content += "Date: " + new Date().toLocaleString() + "\n\n";
+
+        content +=
+            "UBINTZE TECHNOLOGIES\n";
+
+        content +=
+            "====================================\n\n";
+
+        content +=
+            "Title: " + conversation.title + "\n";
+
+        content +=
+            "Date: " + new Date().toLocaleString() + "\n\n";
 
         conversation.messages.forEach(message => {
+
             const role = message.role === "user"
                 ? "YOU"
                 : "JESSY AI";
 
             content += role + ":\n";
+
             content += message.content + "\n\n";
         });
 
         try {
+
             const blob = new Blob(
                 [content],
-                { type: "text/plain;charset=utf-8" }
+                {
+                    type: "text/plain;charset=utf-8"
+                }
             );
 
             const url = URL.createObjectURL(blob);
+
             const link = document.createElement("a");
 
             link.href = url;
-            link.download = "JESSY_AI_Conversation.txt";
+
+            link.download =
+                "JESSY_AI_Conversation.txt";
 
             document.body.appendChild(link);
+
             link.click();
+
             link.remove();
 
             setTimeout(() => {
+
                 URL.revokeObjectURL(url);
+
             }, 2000);
 
-            console.log("Conversation exported.");
+            console.log(
+                "Conversation exported."
+            );
 
         } catch (error) {
-            console.error("Export error:", error);
-            alert("Export failed. Please try again.");
+
+            console.error(
+                "Export error:",
+                error
+            );
+
+            alert(
+                "Export failed. Please try again."
+            );
         }
     });
 }
@@ -895,6 +1150,8 @@ console.log("Search: Enabled");
 console.log("Rename Chat: Enabled");
 console.log("Delete Chat: Enabled");
 console.log("Export: Enabled");
+console.log("Voice Input: Enabled when supported");
+console.log("Voice Output: Enabled");
 console.log("Local Storage: Enabled");
 console.log("Backend:", API_URL);
 console.log("--------------------------------");

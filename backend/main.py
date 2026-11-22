@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from openai import OpenAI
-
+from fastapi.middleware.cors import CORSMiddleware
 
 # --------------------------------
 # PROJECT CONFIGURATION
@@ -47,10 +47,14 @@ client = OpenAI(
 # FASTAPI APPLICATION
 # --------------------------------
 
-app = FastAPI(
-    title="JESSY AI Backend",
-    description="UBINTZE TECHNOLOGIES - Multilingual AI Assistant",
-    version="2.1.0"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://tejasgowda222100-byte.github.io"
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 

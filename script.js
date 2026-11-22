@@ -1,12 +1,23 @@
 // ==========================================
-// JESSY AI - LIVE AI CHAT SYSTEM
+// JESSY AI - COMPLETE LIVE AI CHAT SYSTEM
 // Developed by UBINTZE TECHNOLOGIES
 // Founder: TEJAS GOWDA
 // ==========================================
 
+"use strict";
+
+// ==========================================
+// CONFIGURATION
+// ==========================================
+
 const API_URL = "https://jesssy-ai.onrender.com";
 
+const MAX_HISTORY = 20;
+
+// ==========================================
 // HTML ELEMENTS
+// ==========================================
+
 const menuButton = document.querySelector(".menu-toggle");
 const nav = document.querySelector(".nav");
 
@@ -28,15 +39,20 @@ if (yearElement) {
     yearElement.textContent = new Date().getFullYear();
 }
 
+
+// ==========================================
+// MOBILE NAVIGATION
+// ==========================================
+
 if (menuButton && nav) {
 
     menuButton.addEventListener("click", () => {
 
-        const open = nav.classList.toggle("open");
+        const isOpen = nav.classList.toggle("open");
 
         menuButton.setAttribute(
             "aria-expanded",
-            String(open)
+            String(isOpen)
         );
 
     });
@@ -55,47 +71,71 @@ if (menuButton && nav) {
         });
 
     });
+
 }
 
 
 // ==========================================
-// CHANGE PREVIEW TO LIVE STATUS
+// LIVE WEBSITE STATUS
 // ==========================================
 
-const previewLabel = document.querySelector(".preview-label");
+const previewLabel =
+    document.querySelector(".preview-label");
 
 if (previewLabel) {
     previewLabel.textContent = "LIVE AI";
 }
 
-const chatStatus = document.querySelector(".chat-top small");
+const chatStatus =
+    document.querySelector(".chat-top small");
 
 if (chatStatus) {
+
     chatStatus.innerHTML =
         '<span class="tiny-dot"></span> Groq AI Connected';
+
 }
 
-const chatNote = document.querySelector(".chat-note");
+const chatNote =
+    document.querySelector(".chat-note");
 
 if (chatNote) {
+
     chatNote.textContent =
         "Powered by JESSY AI · UBINTZE TECHNOLOGIES";
+
 }
 
-const demoDescription = document.querySelector("#demo .section-heading p");
+const demoDescription =
+    document.querySelector("#demo .section-heading p");
 
 if (demoDescription) {
+
     demoDescription.textContent =
         "Chat with JESSY AI, your intelligent AI assistant.";
+
+}
+
+
+// ==========================================
+// MARKDOWN CONFIGURATION
+// ==========================================
+
+if (window.marked) {
+
+    window.marked.setOptions({
+
+        breaks: true,
+
+        gfm: true
+
+    });
+
 }
 
 
 // ==========================================
 // DISPLAY MESSAGES
-// ==========================================
-
-// ==========================================
-// DISPLAY MESSAGES WITH MARKDOWN
 // ==========================================
 
 function addMessage(text, sender) {
@@ -104,46 +144,69 @@ function addMessage(text, sender) {
 
     message.className = `message ${sender}`;
 
-    if (sender === "assistant" &&
+    if (
+        sender === "assistant" &&
         window.marked &&
-        window.DOMPurify) {
+        window.DOMPurify
+    ) {
 
-        const html = marked.parse(text, {
-            breaks: true,
-            gfm: true
-        });
+        // Convert Markdown into HTML
 
-        message.innerHTML = DOMPurify.sanitize(html);
+        const html = window.marked.parse(
+            String(text),
+            {
+                breaks: true,
+                gfm: true
+            }
+        );
+
+        // Sanitize HTML before inserting it
+
+        message.innerHTML =
+            window.DOMPurify.sanitize(html);
 
     } else {
 
-        message.textContent = text;
+        // User messages remain plain text
+
+        message.textContent = String(text);
 
     }
 
     chatMessages.appendChild(message);
 
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
 
     return message;
-} {
 
-    const message = document.createElement("div");
-
-    message.className = `message ${sender}`;
-
-    message.textContent = text;
-
-    chatMessages.appendChild(message);
-
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    return message;
 }
 
 
 // ==========================================
-// SEND MESSAGE TO GROQ BACKEND
+// LOADING MESSAGE
+// ==========================================
+
+function showLoadingMessage() {
+
+    const loading = document.createElement("div");
+
+    loading.className = "message assistant loading";
+
+    loading.textContent = "JESSY AI is thinking...";
+
+    chatMessages.appendChild(loading);
+
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
+
+    return loading;
+
+}
+
+
+// ==========================================
+// SEND MESSAGE TO BACKEND
 // ==========================================
 
 async function sendMessage(text) {
@@ -152,7 +215,14 @@ async function sendMessage(text) {
         return;
     }
 
+    if (!chatMessages || !chatInput || !chatForm) {
+        console.error("JESSY AI chat elements are missing.");
+        return;
+    }
+
     isSending = true;
+
+    // Display user message
 
     addMessage(text, "user");
 
@@ -160,60 +230,79 @@ async function sendMessage(text) {
 
     chatInput.disabled = true;
 
-    const sendButton = chatForm.querySelector("button");
+    const sendButton =
+        chatForm.querySelector("button");
 
     if (sendButton) {
         sendButton.disabled = true;
     }
 
-    const loadingMessage = addMessage(
-        "JESSY AI is thinking...",
-        "assistant"
-    );
+    const loadingMessage =
+        showLoadingMessage();
 
     try {
 
-        const response = await fetch(`${API_URL}/chat`, {
+        // ==================================
+        // BACKEND REQUEST
+        // ==================================
 
-            method: "POST",
+        const response = await fetch(
+            `${API_URL}/chat`,
+            {
+                method: "POST",
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-            body: JSON.stringify({
+                body: JSON.stringify({
 
-                message: text,
+                    message: text,
 
-                history: chatHistory,
+                    history: chatHistory,
 
-                language: "auto"
+                    language: "auto"
 
-            })
+                })
 
-        });
+            }
+        );
+
+        // ==================================
+        // READ RESPONSE
+        // ==================================
 
         const data = await response.json();
 
         if (!response.ok) {
 
             throw new Error(
-                data.detail || `Server error: ${response.status}`
+                typeof data.detail === "string"
+                    ? data.detail
+                    : `Server error: ${response.status}`
             );
 
         }
 
         if (!data.reply) {
 
-            throw new Error("JESSY AI returned an empty response.");
+            throw new Error(
+                "JESSY AI returned an empty response."
+            );
 
         }
 
+        // Remove loading message
+
         loadingMessage.remove();
+
+        // Display formatted AI response
 
         addMessage(data.reply, "assistant");
 
-        // SAVE CONVERSATION HISTORY
+        // ==================================
+        // SAVE CHAT HISTORY
+        // ==================================
 
         chatHistory.push(
             {
@@ -226,17 +315,26 @@ async function sendMessage(text) {
             }
         );
 
-        chatHistory = chatHistory.slice(-20);
+        chatHistory =
+            chatHistory.slice(-MAX_HISTORY);
 
-        console.log("JESSY AI response received.");
+        console.log(
+            "JESSY AI response received successfully."
+        );
 
-        console.log("AI Provider:", data.provider);
+        console.log(
+            "AI Provider:",
+            data.provider
+        );
 
     }
 
     catch (error) {
 
-        console.error("JESSY AI Error:", error);
+        console.error(
+            "JESSY AI Error:",
+            error
+        );
 
         loadingMessage.remove();
 
@@ -245,11 +343,12 @@ async function sendMessage(text) {
         if (error instanceof TypeError) {
 
             errorMessage =
-                "Unable to connect to JESSY AI. Please check the backend connection.";
+                "Unable to connect to JESSY AI. Please try again.";
 
         } else {
 
-            errorMessage = error.message;
+            errorMessage =
+                error.message || "Something went wrong.";
 
         }
 
@@ -281,15 +380,52 @@ async function sendMessage(text) {
 // CHAT FORM SUBMISSION
 // ==========================================
 
-if (chatForm) {
+if (chatForm && chatInput) {
 
-    chatForm.addEventListener("submit", event => {
+    chatForm.addEventListener(
+        "submit",
+        event => {
 
-        event.preventDefault();
+            event.preventDefault();
 
-        sendMessage(chatInput.value.trim());
+            const text =
+                chatInput.value.trim();
 
-    });
+            if (text) {
+                sendMessage(text);
+            }
+
+        }
+    );
+
+}
+
+
+// ==========================================
+// ENTER KEY SUPPORT
+// ==========================================
+
+if (chatInput) {
+
+    chatInput.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey
+            ) {
+
+                event.preventDefault();
+
+                if (chatForm) {
+                    chatForm.requestSubmit();
+                }
+
+            }
+
+        }
+    );
 
 }
 
@@ -309,6 +445,10 @@ console.log("Founder: TEJAS GOWDA");
 console.log("AI Provider: Groq");
 
 console.log("Model: GPT-OSS-20B");
+
+console.log("Markdown:", Boolean(window.marked));
+
+console.log("HTML Sanitizer:", Boolean(window.DOMPurify));
 
 console.log("Backend:", API_URL);
 

@@ -55,7 +55,66 @@
 
     <section class="section-wrap section demo-section" id="demo">
       <div class="section-heading"><div class="eyebrow">MEET YOUR AI ASSISTANT</div><h2>Start with a <span class="gradient-text">question.</span></h2><p>This is a website preview. Connect the JESSY AI backend to enable real AI replies.</p></div>
-      <div class="chat-shell">
+     <div class="chat-shell">
+
+  <div class="chat-top">
+    <div class="chat-avatar">J</div>
+
+    <div>
+      <strong>JESSY AI</strong>
+      <small><span class="tiny-dot"></span> Groq AI Connected</small>
+    </div>
+
+    <span class="preview-label">LIVE AI</span>
+  </div>
+
+  <div class="conversation-layout">
+
+    <aside class="conversation-sidebar">
+
+      <button id="newChatButton" class="new-chat-button">
+        + New Chat
+      </button>
+
+      <h4>YOUR CONVERSATIONS</h4>
+
+      <div id="conversationList" class="conversation-list"></div>
+
+    </aside>
+
+    <div class="conversation-main">
+
+      <div class="chat-messages" id="chatMessages">
+
+        <div class="message assistant">
+          Hi! I'm JESSY AI. Ask me what you'd like to learn, create or build.
+        </div>
+
+      </div>
+
+      <form id="chatForm" class="chat-form">
+
+        <input
+          id="chatInput"
+          type="text"
+          placeholder="Ask JESSY something..."
+          autocomplete="off"
+          aria-label="Message JESSY AI"
+        >
+
+        <button type="submit" aria-label="Send message">↑</button>
+
+      </form>
+
+      <p class="chat-note">
+        Powered by JESSY AI · UBINTZE TECHNOLOGIES
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
         <div class="chat-top"><div class="chat-avatar">J</div><div><strong>JESSY AI</strong><small><span class="tiny-dot"></span> Website preview</small></div><span class="preview-label">PREVIEW MODE</span></div>
         <div class="chat-messages" id="chatMessages"><div class="message assistant">Hi! I'm JESSY AI. Ask me what you'd like to learn, create or build. This preview demonstrates the chat interface.</div></div>
         <form id="chatForm" class="chat-form"><input id="chatInput" type="text" placeholder="Ask JESSY something..." autocomplete="off" aria-label="Message JESSY AI"><button type="submit" aria-label="Send message">↑</button></form>

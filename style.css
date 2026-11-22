@@ -316,3 +316,34 @@
         min-height: 300px;
     }
 }
+/* CHAT SEARCH */
+
+.chat-search {
+    width: 100%;
+    padding: 11px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    background: #101a30;
+    color: white;
+    outline: none;
+}
+
+.chat-search:focus {
+    border-color: #2587ed;
+}
+
+.export-chat-button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 22px;
+    border: 1px solid #2587ed;
+    border-radius: 8px;
+    background: transparent;
+    color: #65b5ff;
+    cursor: pointer;
+}
+
+.export-chat-button:hover {
+    background: rgba(37,135,237,0.2);
+}

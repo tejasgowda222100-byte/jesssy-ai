@@ -723,7 +723,49 @@ if (voiceInputButton) {
             }
 
         });
+// ==========================================
+// JESSY AI - VOICE OUTPUT
+// ==========================================
 
+if (voiceOutputButton) {
+
+    voiceOutputButton.addEventListener("click", () => {
+
+        voiceEnabled = !voiceEnabled;
+
+        voiceOutputButton.textContent =
+            voiceEnabled ? "🔇" : "🔊";
+
+        voiceOutputButton.title =
+            voiceEnabled
+                ? "Turn off voice responses"
+                : "Enable voice responses";
+
+        if (!voiceEnabled && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+    });
+}
+
+function speakReply(text) {
+
+    if (!voiceEnabled || !window.speechSynthesis) return;
+
+    window.speechSynthesis.cancel();
+
+    const cleanText = String(text)
+        .replace(/```[\s\S]*?```/g, " Code block omitted. ")
+        .replace(/[*#`_~]/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+    const speech = new SpeechSynthesisUtterance(cleanText);
+
+    speech.lang = "en-IN";
+    speech.rate = 1;
+    speech.pitch = 1;
+
+    window.speechSynthesis.speak(speech);
+}
         recognition.onstart = () => {
             isListening = true;
             voiceInputButton.textContent = "🔴";

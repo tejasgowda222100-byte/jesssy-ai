@@ -692,7 +692,72 @@ if (chatForm && chatInput) {
         }
     });
 }
+// ==========================================
+// JESSY AI - VOICE INPUT
+// ==========================================
 
+const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (voiceInputButton) {
+
+    if (SpeechRecognition) {
+
+        recognition = new SpeechRecognition();
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-IN";
+
+        voiceInputButton.addEventListener("click", () => {
+
+            if (isListening) {
+                recognition.stop();
+                return;
+            }
+
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error("Voice input error:", error);
+            }
+
+        });
+
+        recognition.onstart = () => {
+            isListening = true;
+            voiceInputButton.textContent = "🔴";
+            voiceInputButton.title = "Listening...";
+        };
+
+        recognition.onresult = event => {
+
+            const spokenText =
+                event.results[0][0].transcript;
+
+            chatInput.value = spokenText;
+
+            if (chatInput.value.trim() && !isSending) {
+                chatForm.requestSubmit();
+            }
+        };
+
+        recognition.onerror = event => {
+            console.error("Speech recognition error:", event.error);
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            voiceInputButton.textContent = "🎤";
+            voiceInputButton.title = "Speak to JESSY AI";
+        };
+
+    } else {
+        voiceInputButton.disabled = true;
+        voiceInputButton.title =
+            "Voice recognition is not supported in this browser.";
+    }
+}
 // ==========================================
 // CHAT SEARCH
 // ==========================================

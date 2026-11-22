@@ -646,19 +646,32 @@ async function sendMessage(text) {
 }
 
 // ==========================================
-// CHAT FORM + ENTER KEY
+// CHAT FORM + ENTER KEY FIX
 // ==========================================
 
 if (chatForm && chatInput) {
-    chatForm.addEventListener("submit", event => {
+
+    chatForm.addEventListener("submit", function(event) {
         event.preventDefault();
 
-        const text = chatInput.value.trim();
+        const message = chatInput.value.trim();
 
-        if (text && !isSending) {
-            sendMessage(text);
+        if (message && !isSending) {
+            sendMessage(message);
         }
     });
+
+    chatInput.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+
+            if (!isSending) {
+                chatForm.requestSubmit();
+            }
+        }
+    });
+
+}
 
     chatInput.addEventListener("keydown", event => {
         if (event.key === "Enter" && !event.shiftKey) {

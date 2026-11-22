@@ -70,17 +70,29 @@
 
   <div class="conversation-layout">
 
-    <aside class="conversation-sidebar">
+<aside class="conversation-sidebar">
 
-      <button id="newChatButton" class="new-chat-button">
-        + New Chat
-      </button>
+  <button id="newChatButton" class="new-chat-button">
+    + New Chat
+  </button>
 
-      <h4>YOUR CONVERSATIONS</h4>
+  <input
+    type="search"
+    id="chatSearch"
+    class="chat-search"
+    placeholder="Search conversations..."
+    aria-label="Search conversations"
+  >
 
-      <div id="conversationList" class="conversation-list"></div>
+  <button id="exportChatButton" class="export-chat-button">
+    ↓ Export Current Chat
+  </button>
 
-    </aside>
+  <h4>YOUR CONVERSATIONS</h4>
+
+  <div id="conversationList" class="conversation-list"></div>
+
+</aside>
 
     <div class="conversation-main">
 

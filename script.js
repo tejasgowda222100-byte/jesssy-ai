@@ -721,52 +721,77 @@ console.log("Local Storage: Enabled");
 console.log("Backend:", API_URL);
 console.log("--------------------------------");
 // ==========================================
-// EXPORT CURRENT CONVERSATION
+// EXPORT CURRENT CONVERSATION - FIXED
 // ==========================================
 
 if (exportChatButton) {
-    exportChatButton.addEventListener("click", () => {
+
+    exportChatButton.addEventListener("click", function () {
 
         const conversation = conversations.find(
             chat => chat.id === activeChatId
         );
 
-        if (!conversation || conversation.messages.length === 0) {
-            alert("There are no messages to export.");
+        if (!conversation) {
+            alert("Please select a conversation first.");
+            return;
+        }
+
+        if (!conversation.messages || conversation.messages.length === 0) {
+            alert("No messages available to export.");
             return;
         }
 
         let content = "JESSY AI CONVERSATION\n";
-        content += "Developed by UBINTZE TECHNOLOGIES\n";
-        content += "================================\n\n";
-
-        content += "Title: " + conversation.title + "\n\n";
+        content += "UBINTZE TECHNOLOGIES\n";
+        content += "====================================\n\n";
+        content += "Title: " + conversation.title + "\n";
+        content += "Date: " + new Date().toLocaleString() + "\n\n";
 
         conversation.messages.forEach(message => {
+
             const role = message.role === "user"
                 ? "YOU"
                 : "JESSY AI";
 
             content += role + ":\n";
             content += message.content + "\n\n";
+
         });
 
-        const blob = new Blob(
-            [content],
-            { type: "text/plain;charset=utf-8" }
-        );
+        try {
 
-        const url = URL.createObjectURL(blob);
+            const blob = new Blob(
+                [content],
+                { type: "text/plain;charset=utf-8" }
+            );
 
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "JESSY_AI_Conversation.txt";
+            const url = URL.createObjectURL(blob);
 
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+            const link = document.createElement("a");
 
-        URL.revokeObjectURL(url);
+            link.href = url;
+            link.download = "JESSY_AI_Conversation.txt";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            // Allow browser to start downloading first
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 2000);
+
+            console.log("JESSY AI conversation exported.");
+
+        } catch (error) {
+
+            console.error("Export error:", error);
+            alert("Export failed. Please try again.");
+
+        }
 
     });
+
 }
+

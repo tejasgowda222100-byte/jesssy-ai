@@ -22,9 +22,11 @@ const chatMessages = document.getElementById("chatMessages");
 const newChatButton = document.getElementById("newChatButton");
 const chatSearch = document.getElementById("chatSearch");
 const exportChatButton = document.getElementById("exportChatButton");
+const conversationList = document.getElementById("conversationList");
 
 const yearElement = document.getElementById("year");
 
+// STATE
 let conversations = [];
 let activeChatId = null;
 let chatHistory = [];
@@ -42,12 +44,14 @@ const previewLabel = document.querySelector(".preview-label");
 if (previewLabel) previewLabel.textContent = "LIVE AI";
 
 const chatStatus = document.querySelector(".chat-top small");
+
 if (chatStatus) {
     chatStatus.innerHTML =
         '<span class="tiny-dot"></span> Groq AI Connected';
 }
 
 const chatNote = document.querySelector(".chat-note");
+
 if (chatNote) {
     chatNote.textContent =
         "Powered by JESSY AI · UBINTZE TECHNOLOGIES";
@@ -108,7 +112,7 @@ function showWelcomeMessage() {
 }
 
 // ==========================================
-// SAVE AND LOAD CONVERSATIONS
+// SAVE CONVERSATIONS
 // ==========================================
 
 function saveConversations() {
@@ -121,6 +125,10 @@ function saveConversations() {
         console.error("Unable to save conversations:", error);
     }
 }
+
+// ==========================================
+// LOAD CONVERSATIONS
+// ==========================================
 
 function loadConversations() {
     try {
@@ -145,7 +153,9 @@ function loadConversations() {
         return;
     }
 
-    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+    conversations.sort(
+        (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)
+    );
 
     activeChatId = conversations[0].id;
 
@@ -161,7 +171,8 @@ function createNewChat() {
     if (isSending) return;
 
     const conversation = {
-        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        id: Date.now().toString() +
+            Math.random().toString(36).slice(2),
         title: "New Chat",
         messages: [],
         updatedAt: Date.now()
@@ -190,7 +201,10 @@ if (newChatButton) {
 function openConversation(id) {
     if (isSending) return;
 
-    const conversation = conversations.find(chat => chat.id === id);
+    const conversation = conversations.find(
+        chat => chat.id === id
+    );
+
     if (!conversation) return;
 
     activeChatId = id;
@@ -198,14 +212,16 @@ function openConversation(id) {
     chatHistory = conversation.messages
         .slice(-MAX_HISTORY);
 
-    chatMessages.replaceChildren();
+    if (chatMessages) {
+        chatMessages.replaceChildren();
 
-    if (conversation.messages.length === 0) {
-        showWelcomeMessage();
-    } else {
-        conversation.messages.forEach(message => {
-            addMessage(message.content, message.role);
-        });
+        if (conversation.messages.length === 0) {
+            showWelcomeMessage();
+        } else {
+            conversation.messages.forEach(message => {
+                addMessage(message.content, message.role);
+            });
+        }
     }
 
     renderConversations();
@@ -214,7 +230,7 @@ function openConversation(id) {
 }
 
 // ==========================================
-// RENDER CONVERSATION SIDEBAR
+// RENDER CONVERSATIONS
 // ==========================================
 
 function renderConversations() {
@@ -226,10 +242,12 @@ function renderConversations() {
         ? chatSearch.value.trim().toLowerCase()
         : "";
 
-    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+    conversations.sort(
+        (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)
+    );
 
     const filteredConversations = conversations.filter(chat => {
-        const titleMatch = (chat.title || "")
+        const titleMatch = String(chat.title || "")
             .toLowerCase()
             .includes(searchTerm);
 
@@ -243,66 +261,6 @@ function renderConversations() {
     });
 
     filteredConversations.forEach(conversation => {
-        const item = document.createElement("div");
-
-        item.className = "conversation-item";
-
-        if (conversation.id === activeChatId) {
-            item.classList.add("active");
-        }
-
-        const title = document.createElement("button");
-        title.type = "button";
-        title.className = "conversation-title";
-        title.textContent = conversation.title || "New Chat";
-
-        title.addEventListener("click", () => {
-            openConversation(conversation.id);
-        });
-
-        const actions = document.createElement("div");
-        actions.className = "conversation-actions";
-
-        const renameButton = document.createElement("button");
-        renameButton.type = "button";
-        renameButton.textContent = "✎";
-        renameButton.title = "Rename";
-
-        renameButton.addEventListener("click", () => {
-            renameConversation(conversation.id);
-        });
-
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.textContent = "×";
-        deleteButton.title = "Delete";
-
-        deleteButton.addEventListener("click", () => {
-            deleteConversation(conversation.id);
-        });
-
-        actions.append(renameButton, deleteButton);
-        item.append(title, actions);
-
-        conversationList.appendChild(item);
-    });
-
-    if (filteredConversations.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = "No conversations found.";
-        empty.style.color = "#8494ad";
-        empty.style.fontSize = "12px";
-
-        conversationList.appendChild(empty);
-    }
-}
-    if (!conversationList) return;
-
-    conversationList.replaceChildren();
-
-    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
-
-    conversations.forEach(conversation => {
         const item = document.createElement("div");
 
         item.className = "conversation-item";
@@ -346,8 +304,18 @@ function renderConversations() {
 
         actions.append(renameButton, deleteButton);
         item.append(title, actions);
+
         conversationList.appendChild(item);
     });
+
+    if (filteredConversations.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No conversations found.";
+        empty.style.color = "#8494ad";
+        empty.style.fontSize = "12px";
+
+        conversationList.appendChild(empty);
+    }
 }
 
 // ==========================================
@@ -357,7 +325,10 @@ function renderConversations() {
 function renameConversation(id) {
     if (isSending) return;
 
-    const conversation = conversations.find(chat => chat.id === id);
+    const conversation = conversations.find(
+        chat => chat.id === id
+    );
+
     if (!conversation) return;
 
     const newTitle = prompt(
@@ -394,10 +365,13 @@ function deleteConversation(id) {
 
     if (!confirmed) return;
 
-    conversations = conversations.filter(chat => chat.id !== id);
+    conversations = conversations.filter(
+        chat => chat.id !== id
+    );
 
     if (activeChatId === id) {
         activeChatId = null;
+        chatHistory = [];
     }
 
     saveConversations();
@@ -584,11 +558,9 @@ async function sendMessage(text) {
     try {
         const response = await fetch(`${API_URL}/chat`, {
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 message: text,
                 history: chatHistory,
@@ -607,7 +579,9 @@ async function sendMessage(text) {
         }
 
         if (!data.reply) {
-            throw new Error("JESSY AI returned an empty response.");
+            throw new Error(
+                "JESSY AI returned an empty response."
+            );
         }
 
         loadingMessage.remove();
@@ -672,7 +646,7 @@ async function sendMessage(text) {
 }
 
 // ==========================================
-// CHAT FORM
+// CHAT FORM + ENTER KEY
 // ==========================================
 
 if (chatForm && chatInput) {
@@ -681,7 +655,7 @@ if (chatForm && chatInput) {
 
         const text = chatInput.value.trim();
 
-        if (text) {
+        if (text && !isSending) {
             sendMessage(text);
         }
     });
@@ -689,10 +663,16 @@ if (chatForm && chatInput) {
     chatInput.addEventListener("keydown", event => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            chatForm.requestSubmit();
+
+            const text = chatInput.value.trim();
+
+            if (text && !isSending) {
+                sendMessage(text);
+            }
         }
     });
 }
+
 // ==========================================
 // CHAT SEARCH
 // ==========================================
@@ -702,6 +682,74 @@ if (chatSearch) {
         renderConversations();
     });
 }
+
+// ==========================================
+// EXPORT CURRENT CONVERSATION
+// ==========================================
+
+if (exportChatButton) {
+    exportChatButton.addEventListener("click", () => {
+        const conversation = conversations.find(
+            chat => chat.id === activeChatId
+        );
+
+        if (!conversation) {
+            alert("Please select a conversation first.");
+            return;
+        }
+
+        if (
+            !conversation.messages ||
+            conversation.messages.length === 0
+        ) {
+            alert("No messages available to export.");
+            return;
+        }
+
+        let content = "JESSY AI CONVERSATION\n";
+        content += "UBINTZE TECHNOLOGIES\n";
+        content += "====================================\n\n";
+        content += "Title: " + conversation.title + "\n";
+        content += "Date: " + new Date().toLocaleString() + "\n\n";
+
+        conversation.messages.forEach(message => {
+            const role = message.role === "user"
+                ? "YOU"
+                : "JESSY AI";
+
+            content += role + ":\n";
+            content += message.content + "\n\n";
+        });
+
+        try {
+            const blob = new Blob(
+                [content],
+                { type: "text/plain;charset=utf-8" }
+            );
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = "JESSY_AI_Conversation.txt";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 2000);
+
+            console.log("Conversation exported.");
+
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Export failed. Please try again.");
+        }
+    });
+}
+
 // ==========================================
 // START JESSY AI
 // ==========================================
@@ -715,83 +763,10 @@ console.log("Founder: TEJAS GOWDA");
 console.log("AI Provider: Groq");
 console.log("Model: GPT-OSS-20B");
 console.log("Conversation History: Enabled");
+console.log("Search: Enabled");
 console.log("Rename Chat: Enabled");
 console.log("Delete Chat: Enabled");
+console.log("Export: Enabled");
 console.log("Local Storage: Enabled");
 console.log("Backend:", API_URL);
 console.log("--------------------------------");
-// ==========================================
-// EXPORT CURRENT CONVERSATION - FIXED
-// ==========================================
-
-if (exportChatButton) {
-
-    exportChatButton.addEventListener("click", function () {
-
-        const conversation = conversations.find(
-            chat => chat.id === activeChatId
-        );
-
-        if (!conversation) {
-            alert("Please select a conversation first.");
-            return;
-        }
-
-        if (!conversation.messages || conversation.messages.length === 0) {
-            alert("No messages available to export.");
-            return;
-        }
-
-        let content = "JESSY AI CONVERSATION\n";
-        content += "UBINTZE TECHNOLOGIES\n";
-        content += "====================================\n\n";
-        content += "Title: " + conversation.title + "\n";
-        content += "Date: " + new Date().toLocaleString() + "\n\n";
-
-        conversation.messages.forEach(message => {
-
-            const role = message.role === "user"
-                ? "YOU"
-                : "JESSY AI";
-
-            content += role + ":\n";
-            content += message.content + "\n\n";
-
-        });
-
-        try {
-
-            const blob = new Blob(
-                [content],
-                { type: "text/plain;charset=utf-8" }
-            );
-
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement("a");
-
-            link.href = url;
-            link.download = "JESSY_AI_Conversation.txt";
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            // Allow browser to start downloading first
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-            }, 2000);
-
-            console.log("JESSY AI conversation exported.");
-
-        } catch (error) {
-
-            console.error("Export error:", error);
-            alert("Export failed. Please try again.");
-
-        }
-
-    });
-
-}
-

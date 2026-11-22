@@ -94,7 +94,39 @@ if (demoDescription) {
 // DISPLAY MESSAGES
 // ==========================================
 
+// ==========================================
+// DISPLAY MESSAGES WITH MARKDOWN
+// ==========================================
+
 function addMessage(text, sender) {
+
+    const message = document.createElement("div");
+
+    message.className = `message ${sender}`;
+
+    if (sender === "assistant" &&
+        window.marked &&
+        window.DOMPurify) {
+
+        const html = marked.parse(text, {
+            breaks: true,
+            gfm: true
+        });
+
+        message.innerHTML = DOMPurify.sanitize(html);
+
+    } else {
+
+        message.textContent = text;
+
+    }
+
+    chatMessages.appendChild(message);
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return message;
+} {
 
     const message = document.createElement("div");
 

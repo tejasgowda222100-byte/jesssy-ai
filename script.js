@@ -20,7 +20,8 @@ const chatInput = document.getElementById("chatInput");
 const chatMessages = document.getElementById("chatMessages");
 
 const newChatButton = document.getElementById("newChatButton");
-const conversationList = document.getElementById("conversationList");
+const chatSearch = document.getElementById("chatSearch");
+const exportChatButton = document.getElementById("exportChatButton");
 
 const yearElement = document.getElementById("year");
 

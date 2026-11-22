@@ -693,7 +693,15 @@ if (chatForm && chatInput) {
         }
     });
 }
+// ==========================================
+// CHAT SEARCH
+// ==========================================
 
+if (chatSearch) {
+    chatSearch.addEventListener("input", () => {
+        renderConversations();
+    });
+}
 // ==========================================
 // START JESSY AI
 // ==========================================

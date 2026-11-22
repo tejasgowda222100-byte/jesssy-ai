@@ -44,16 +44,25 @@ if (yearElement) {
 if (menuButton && nav) {
 
     menuButton.addEventListener("click", () => {
+
         const isOpen = nav.classList.toggle("open");
+
         menuButton.setAttribute("aria-expanded", String(isOpen));
+
     });
 
     nav.querySelectorAll("a").forEach(link => {
+
         link.addEventListener("click", () => {
+
             nav.classList.remove("open");
+
             menuButton.setAttribute("aria-expanded", "false");
+
         });
+
     });
+
 }
 
 // ==========================================
@@ -69,23 +78,29 @@ if (previewLabel) {
 const chatStatus = document.querySelector(".chat-top small");
 
 if (chatStatus) {
+
     chatStatus.innerHTML =
         '<span class="tiny-dot"></span> Groq AI Connected';
+
 }
 
 const chatNote = document.querySelector(".chat-note");
 
 if (chatNote) {
+
     chatNote.textContent =
         "Powered by JESSY AI · UBINTZE TECHNOLOGIES";
+
 }
 
 const demoDescription =
     document.querySelector("#demo .section-heading p");
 
 if (demoDescription) {
+
     demoDescription.textContent =
         "Chat with JESSY AI, your intelligent AI assistant.";
+
 }
 
 // ==========================================
@@ -93,10 +108,119 @@ if (demoDescription) {
 // ==========================================
 
 if (window.marked) {
+
     window.marked.setOptions({
         breaks: true,
         gfm: true
     });
+
+}
+
+// ==========================================
+// COPY CODE FUNCTION
+// ==========================================
+
+async function copyCode(code, button) {
+
+    try {
+
+        await navigator.clipboard.writeText(code);
+
+        button.textContent = "Copied!";
+
+        setTimeout(() => {
+            button.textContent = "Copy";
+        }, 2000);
+
+    } catch (error) {
+
+        console.error("Copy failed:", error);
+
+        // Fallback for browsers where clipboard API is unavailable
+
+        const textarea = document.createElement("textarea");
+
+        textarea.value = code;
+
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        try {
+
+            const successful = document.execCommand("copy");
+
+            button.textContent = successful ? "Copied!" : "Failed";
+
+        } catch (fallbackError) {
+
+            console.error("Fallback copy failed:", fallbackError);
+
+            button.textContent = "Failed";
+
+        }
+
+        textarea.remove();
+
+        setTimeout(() => {
+            button.textContent = "Copy";
+        }, 2000);
+
+    }
+
+}
+
+// ==========================================
+// FORMAT CODE BLOCKS
+// ==========================================
+
+function formatCodeBlocks(message) {
+
+    // Syntax highlighting
+
+    message.querySelectorAll("pre code").forEach(block => {
+
+        if (window.hljs) {
+
+            window.hljs.highlightElement(block);
+
+        }
+
+    });
+
+    // Copy buttons
+
+    message.querySelectorAll("pre").forEach(pre => {
+
+        if (pre.querySelector(".copy-code-btn")) {
+            return;
+        }
+
+        const code = pre.querySelector("code");
+
+        if (!code) {
+            return;
+        }
+
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.className = "copy-code-btn";
+        button.textContent = "Copy";
+
+        button.addEventListener("click", () => {
+
+            copyCode(code.innerText, button);
+
+        });
+
+        pre.appendChild(button);
+
+    });
+
 }
 
 // ==========================================
@@ -106,8 +230,11 @@ if (window.marked) {
 function addMessage(text, sender) {
 
     if (!chatMessages) {
+
         console.error("Chat messages element not found.");
+
         return null;
+
     }
 
     const message = document.createElement("div");
@@ -122,10 +249,18 @@ function addMessage(text, sender) {
         window.DOMPurify
     ) {
 
+        // Convert Markdown to HTML
+
         const html = window.marked.parse(content);
+
+        // Sanitize generated HTML
 
         message.innerHTML =
             window.DOMPurify.sanitize(html);
+
+        // Add syntax highlighting and copy buttons
+
+        formatCodeBlocks(message);
 
     } else {
 
@@ -138,6 +273,7 @@ function addMessage(text, sender) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     return message;
+
 }
 
 // ==========================================
@@ -157,6 +293,7 @@ function showLoadingMessage() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     return loading;
+
 }
 
 // ==========================================
@@ -170,8 +307,11 @@ async function sendMessage(text) {
     }
 
     if (!chatMessages || !chatInput) {
+
         console.error("JESSY AI chat elements are missing.");
+
         return;
+
     }
 
     isSending = true;
@@ -180,9 +320,12 @@ async function sendMessage(text) {
         ? chatForm.querySelector("button")
         : null;
 
+    // Display user message
+
     addMessage(text, "user");
 
     chatInput.value = "";
+
     chatInput.disabled = true;
 
     if (sendButton) {
@@ -193,7 +336,10 @@ async function sendMessage(text) {
 
     try {
 
+        // Backend API request
+
         const response = await fetch(`${API_URL}/chat`, {
+
             method: "POST",
 
             headers: {
@@ -201,46 +347,69 @@ async function sendMessage(text) {
             },
 
             body: JSON.stringify({
+
                 message: text,
+
                 history: chatHistory,
+
                 language: "auto"
+
             })
+
         });
+
+        // Read backend response safely
 
         const data = await response.json();
 
         if (!response.ok) {
+
             throw new Error(
+
                 typeof data.detail === "string"
                     ? data.detail
                     : `Server error: ${response.status}`
+
             );
+
         }
 
         if (!data.reply) {
-            throw new Error("JESSY AI returned an empty response.");
+
+            throw new Error(
+                "JESSY AI returned an empty response."
+            );
+
         }
 
+        // Remove loading message
+
         loadingMessage.remove();
+
+        // Display AI response
 
         addMessage(data.reply, "assistant");
 
         // Save conversation history
 
         chatHistory.push(
+
             {
                 role: "user",
                 content: text
             },
+
             {
                 role: "assistant",
                 content: data.reply
             }
+
         );
 
         chatHistory = chatHistory.slice(-MAX_HISTORY);
 
         console.log("JESSY AI response received successfully.");
+
         console.log("AI Provider:", data.provider);
 
     } catch (error) {
@@ -254,11 +423,15 @@ async function sendMessage(text) {
         let errorMessage;
 
         if (error instanceof TypeError) {
+
             errorMessage =
                 "Unable to connect to JESSY AI. Please check your internet connection and try again.";
+
         } else {
+
             errorMessage =
                 error.message || "Something went wrong.";
+
         }
 
         addMessage("Sorry! " + errorMessage, "assistant");
@@ -274,7 +447,9 @@ async function sendMessage(text) {
         }
 
         chatInput.focus();
+
     }
+
 }
 
 // ==========================================
@@ -290,10 +465,13 @@ if (chatForm && chatInput) {
         const text = chatInput.value.trim();
 
         if (text) {
+
             sendMessage(text);
+
         }
 
     });
+
 }
 
 // ==========================================
@@ -311,9 +489,11 @@ if (chatInput) {
             if (chatForm) {
                 chatForm.requestSubmit();
             }
+
         }
 
     });
+
 }
 
 // ==========================================
@@ -321,12 +501,25 @@ if (chatInput) {
 // ==========================================
 
 console.log("--------------------------------");
+
 console.log("JESSY AI is ready!");
+
 console.log("Developed by UBINTZE TECHNOLOGIES");
+
 console.log("Founder: TEJAS GOWDA");
+
 console.log("AI Provider: Groq");
+
 console.log("Model: GPT-OSS-20B");
+
 console.log("Markdown:", Boolean(window.marked));
+
 console.log("HTML Sanitizer:", Boolean(window.DOMPurify));
+
+console.log("Syntax Highlighting:", Boolean(window.hljs));
+
+console.log("Copy Code: Enabled");
+
 console.log("Backend:", API_URL);
+
 console.log("--------------------------------");

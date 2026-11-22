@@ -720,3 +720,53 @@ console.log("Delete Chat: Enabled");
 console.log("Local Storage: Enabled");
 console.log("Backend:", API_URL);
 console.log("--------------------------------");
+// ==========================================
+// EXPORT CURRENT CONVERSATION
+// ==========================================
+
+if (exportChatButton) {
+    exportChatButton.addEventListener("click", () => {
+
+        const conversation = conversations.find(
+            chat => chat.id === activeChatId
+        );
+
+        if (!conversation || conversation.messages.length === 0) {
+            alert("There are no messages to export.");
+            return;
+        }
+
+        let content = "JESSY AI CONVERSATION\n";
+        content += "Developed by UBINTZE TECHNOLOGIES\n";
+        content += "================================\n\n";
+
+        content += "Title: " + conversation.title + "\n\n";
+
+        conversation.messages.forEach(message => {
+            const role = message.role === "user"
+                ? "YOU"
+                : "JESSY AI";
+
+            content += role + ":\n";
+            content += message.content + "\n\n";
+        });
+
+        const blob = new Blob(
+            [content],
+            { type: "text/plain;charset=utf-8" }
+        );
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "JESSY_AI_Conversation.txt";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(url);
+
+    });
+}

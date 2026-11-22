@@ -222,6 +222,84 @@ function renderConversations() {
 
     conversationList.replaceChildren();
 
+    const searchTerm = chatSearch
+        ? chatSearch.value.trim().toLowerCase()
+        : "";
+
+    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+
+    const filteredConversations = conversations.filter(chat => {
+        const titleMatch = (chat.title || "")
+            .toLowerCase()
+            .includes(searchTerm);
+
+        const messageMatch = chat.messages.some(message =>
+            String(message.content || "")
+                .toLowerCase()
+                .includes(searchTerm)
+        );
+
+        return titleMatch || messageMatch;
+    });
+
+    filteredConversations.forEach(conversation => {
+        const item = document.createElement("div");
+
+        item.className = "conversation-item";
+
+        if (conversation.id === activeChatId) {
+            item.classList.add("active");
+        }
+
+        const title = document.createElement("button");
+        title.type = "button";
+        title.className = "conversation-title";
+        title.textContent = conversation.title || "New Chat";
+
+        title.addEventListener("click", () => {
+            openConversation(conversation.id);
+        });
+
+        const actions = document.createElement("div");
+        actions.className = "conversation-actions";
+
+        const renameButton = document.createElement("button");
+        renameButton.type = "button";
+        renameButton.textContent = "✎";
+        renameButton.title = "Rename";
+
+        renameButton.addEventListener("click", () => {
+            renameConversation(conversation.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "×";
+        deleteButton.title = "Delete";
+
+        deleteButton.addEventListener("click", () => {
+            deleteConversation(conversation.id);
+        });
+
+        actions.append(renameButton, deleteButton);
+        item.append(title, actions);
+
+        conversationList.appendChild(item);
+    });
+
+    if (filteredConversations.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No conversations found.";
+        empty.style.color = "#8494ad";
+        empty.style.fontSize = "12px";
+
+        conversationList.appendChild(empty);
+    }
+}
+    if (!conversationList) return;
+
+    conversationList.replaceChildren();
+
     conversations.sort((a, b) => b.updatedAt - a.updatedAt);
 
     conversations.forEach(conversation => {

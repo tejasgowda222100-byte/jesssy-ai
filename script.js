@@ -594,6 +594,7 @@ async function sendMessage(text) {
         loadingMessage.remove();
 
         addMessage(data.reply, "assistant");
+        speakReply(data.reply);
 
         const userMessage = {
             role: "user",

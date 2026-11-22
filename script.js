@@ -22,6 +22,13 @@ const chatMessages = document.getElementById("chatMessages");
 const newChatButton = document.getElementById("newChatButton");
 const chatSearch = document.getElementById("chatSearch");
 const exportChatButton = document.getElementById("exportChatButton");
+// VOICE CONTROLS
+const voiceInputButton = document.getElementById("voiceInputButton");
+const voiceOutputButton = document.getElementById("voiceOutputButton");
+
+let voiceEnabled = false;
+let recognition = null;
+let isListening = false;
 const conversationList = document.getElementById("conversationList");
 
 const yearElement = document.getElementById("year");

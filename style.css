@@ -4,3 +4,192 @@
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @media(max-width:800px){.nav{gap:15px}.hero{grid-template-columns:1fr;padding-top:65px}.hero-visual{height:340px}.feature-grid{grid-template-columns:repeat(2,1fr)}.about-inner{gap:25px}.hero h1{font-size:62px}}
 @media(max-width:600px){.site-header{height:70px}.menu-toggle{display:block}.nav{display:none;position:absolute;top:69px;left:0;right:0;padding:20px 28px;background:#0b1325;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start}.nav.open{display:flex}.hero{padding-top:55px;min-height:auto}.hero h1{font-size:54px;letter-spacing:-2px}.hero-visual{transform:scale(.88);margin:-10px -25px}.trust-line{margin-top:30px}.ticker{font-size:9px;gap:12px;letter-spacing:1px}.section{padding-top:75px;padding-bottom:75px}.feature-grid{grid-template-columns:1fr}.feature{min-height:auto}.about-inner{grid-template-columns:1fr;padding-top:65px;padding-bottom:65px}.section-heading h2,.about-inner h2,.closing h2{font-size:40px}.footer{align-items:flex-start;gap:20px;flex-direction:column}.footer-right{flex-direction:column;gap:8px}.preview-label{font-size:8px}}
+/* ==========================================
+   JESSY AI - ADVANCED CHAT UI
+   ========================================== */
+
+/* Assistant message formatting */
+
+.message.assistant {
+    max-width: 90%;
+    overflow-wrap: anywhere;
+    line-height: 1.8;
+}
+
+.message.assistant h1,
+.message.assistant h2,
+.message.assistant h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    color: #75caff;
+    margin: 18px 0 10px;
+    line-height: 1.3;
+}
+
+.message.assistant h1 {
+    font-size: 23px;
+}
+
+.message.assistant h2 {
+    font-size: 19px;
+}
+
+.message.assistant h3 {
+    font-size: 16px;
+}
+
+.message.assistant p {
+    margin: 10px 0;
+}
+
+.message.assistant strong {
+    color: #65caff;
+    font-weight: 700;
+}
+
+.message.assistant ul,
+.message.assistant ol {
+    padding-left: 24px;
+    margin: 12px 0;
+}
+
+.message.assistant li {
+    margin: 7px 0;
+}
+
+/* ==========================================
+   CODE BLOCKS
+   ========================================== */
+
+.message.assistant pre {
+    position: relative;
+    background: #050b18;
+    border: 1px solid #294d78;
+    border-radius: 10px;
+    padding: 18px;
+    margin: 15px 0;
+    overflow-x: auto;
+    max-width: 100%;
+    box-shadow: 0 8px 25px #0005;
+}
+
+.message.assistant pre code {
+    display: block;
+    color: #a8e1ff;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    background: transparent;
+    padding: 0;
+}
+
+.message.assistant :not(pre) > code {
+    background: #203653;
+    color: #69d9ff;
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-family: Consolas, monospace;
+}
+
+/* ==========================================
+   TABLES
+   ========================================== */
+
+.message.assistant table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 12px;
+    display: block;
+    overflow-x: auto;
+}
+
+.message.assistant th,
+.message.assistant td {
+    border: 1px solid #29466e;
+    padding: 10px;
+    text-align: left;
+}
+
+.message.assistant th {
+    background: #18365b;
+    color: #70d7ff;
+}
+
+/* ==========================================
+   BLOCKQUOTES
+   ========================================== */
+
+.message.assistant blockquote {
+    border-left: 3px solid #48a9ff;
+    margin: 14px 0;
+    padding: 8px 14px;
+    color: #a9c9ed;
+    background: #101e35;
+    border-radius: 0 8px 8px 0;
+}
+
+/* ==========================================
+   CHAT RESPONSIVENESS
+   ========================================== */
+
+.chat-messages {
+    overflow-y: auto;
+    max-height: 650px;
+    scroll-behavior: smooth;
+}
+
+.message {
+    animation: messageAppear .25s ease;
+}
+
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-form button {
+    transition: .2s ease;
+}
+
+.chat-form button:hover {
+    background: #54b5ff;
+    box-shadow: 0 0 20px #2587ed88;
+}
+
+.chat-form button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.message.assistant a {
+    color: #65caff;
+    text-decoration: underline;
+}
+
+.message.assistant hr {
+    border: 0;
+    border-top: 1px solid #29466e;
+    margin: 18px 0;
+}
+
+@media(max-width:600px) {
+    .message.assistant {
+        max-width: 95%;
+    }
+
+    .message.assistant pre {
+        padding: 12px;
+    }
+
+    .message.assistant pre code {
+        font-size: 12px;
+    }
+}

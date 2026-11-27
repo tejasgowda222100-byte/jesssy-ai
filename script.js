@@ -1222,9 +1222,181 @@ if (voiceOutputButton) {
 
 const tripSearchForm = document.getElementById("tripSearchForm");
 const tripLocationInput = document.getElementById("tripLocation");
+const tripOriginInput = document.getElementById("tripOrigin");
 const tripCategorySelect = document.getElementById("tripCategory");
+const tripStartDateInput = document.getElementById("tripStartDate");
+const tripEndDateInput = document.getElementById("tripEndDate");
+const tripTravellersInput = document.getElementById("tripTravellers");
 const tripSearchStatus = document.getElementById("tripSearchStatus");
 const tripSearchResults = document.getElementById("tripSearchResults");
+const tripProviderOutput = document.getElementById("tripProviderOutput");
+const tripProviderStatus = document.getElementById("tripProviderStatus");
+const tripProviderResults = document.getElementById("tripProviderResults");
+const tripPosterPreview = document.getElementById("tripPosterPreview");
+const tripPosterDownload = document.getElementById("tripPosterDownload");
+
+const TRIP_PROVIDER_SITES = {
+    flight: [
+        { name: "Google Flights", domain: "google.com/travel/flights" },
+        { name: "Skyscanner", domain: "skyscanner.net" },
+        { name: "KAYAK", domain: "kayak.com/flights" },
+        { name: "Expedia", domain: "expedia.com/Flights" }
+    ],
+    train: [
+        { name: "Trainline", domain: "thetrainline.com" },
+        { name: "Omio", domain: "omio.com" },
+        { name: "Rail Europe", domain: "raileurope.com" },
+        { name: "IRCTC (India)", domain: "irctc.co.in" }
+    ],
+    bus: [
+        { name: "Busbud", domain: "busbud.com" },
+        { name: "FlixBus", domain: "flixbus.com" },
+        { name: "redBus", domain: "redbus.in" },
+        { name: "Omio", domain: "omio.com" }
+    ],
+    hotel: [
+        { name: "Booking.com", domain: "booking.com" },
+        { name: "Agoda", domain: "agoda.com" },
+        { name: "Expedia", domain: "expedia.com" }
+    ],
+    restaurant: [
+        { name: "Google Maps", domain: "google.com/maps" },
+        { name: "OpenTable", domain: "opentable.com" },
+        { name: "Tripadvisor", domain: "tripadvisor.com" }
+    ],
+    movie: [
+        { name: "BookMyShow", domain: "bookmyshow.com" },
+        { name: "Ticketmaster", domain: "ticketmaster.com" },
+        { name: "Fandango", domain: "fandango.com" }
+    ]
+};
+
+function createTripInspirationImage(destination) {
+    if (!tripPosterPreview || !tripPosterDownload) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 630;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const sky = context.createLinearGradient(0, 0, 1000, 630);
+    sky.addColorStop(0, "#102c59");
+    sky.addColorStop(0.52, "#456fa8");
+    sky.addColorStop(1, "#f2a477");
+    context.fillStyle = sky;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.fillStyle = "rgba(255, 218, 150, 0.92)";
+    context.beginPath();
+    context.arc(940, 195, 92, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#203e66";
+    context.beginPath();
+    context.moveTo(0, 450);
+    context.lineTo(260, 190);
+    context.lineTo(460, 430);
+    context.lineTo(680, 240);
+    context.lineTo(950, 470);
+    context.lineTo(1200, 285);
+    context.lineTo(1200, 630);
+    context.lineTo(0, 630);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#177f91";
+    context.beginPath();
+    context.moveTo(0, 470);
+    context.bezierCurveTo(280, 395, 490, 535, 760, 450);
+    context.bezierCurveTo(930, 400, 1080, 430, 1200, 390);
+    context.lineTo(1200, 630);
+    context.lineTo(0, 630);
+    context.closePath();
+    context.fill();
+
+    context.strokeStyle = "rgba(255,255,255,0.72)";
+    context.lineWidth = 3;
+    context.setLineDash([9, 12]);
+    context.beginPath();
+    context.moveTo(710, 190);
+    context.bezierCurveTo(650, 245, 790, 285, 730, 335);
+    context.stroke();
+    context.setLineDash([]);
+
+    context.fillStyle = "#ffffff";
+    context.font = "700 21px system-ui, sans-serif";
+    context.fillText("A JESSY TRIP IDEA", 78, 84);
+    context.fillStyle = "rgba(255,255,255,0.82)";
+    context.font = "500 17px system-ui, sans-serif";
+    context.fillText("THE WORLD IS WAITING", 80, 116);
+
+    const titleText = Array.from(destination.trim()).slice(0, 64).join("");
+    const words = titleText.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = "";
+    context.font = "700 61px system-ui, sans-serif";
+    for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (line && context.measureText(candidate).width > 710) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = candidate;
+        }
+    }
+    if (line) lines.push(line);
+
+    context.shadowColor = "rgba(5, 14, 36, 0.4)";
+    context.shadowBlur = 18;
+    context.fillStyle = "#ffffff";
+    lines.slice(0, 2).forEach((part, index) => {
+        context.fillText(part, 80, 335 + index * 76, 720);
+    });
+    context.shadowBlur = 0;
+    context.fillStyle = "rgba(255,255,255,0.9)";
+    context.font = "500 18px system-ui, sans-serif";
+    context.fillText("A little inspiration for the journey ahead", 82, 536);
+
+    const imageUrl = canvas.toDataURL("image/png");
+    tripPosterPreview.src = imageUrl;
+    tripPosterDownload.href = imageUrl;
+    const safeName = titleText.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
+    tripPosterDownload.download = `jessy-${safeName}-postcard.png`;
+}
+
+function buildProviderQuery(category, origin, destination, startDate, endDate, travellers) {
+    const route = origin ? `from ${origin} to ${destination}` : `in ${destination}`;
+    const dateText = [startDate, endDate].filter(Boolean).join(" to ");
+    const dates = dateText ? ` for ${dateText}` : "";
+    const people = travellers === 1 ? "1 traveller" : `${travellers} travellers`;
+    const searchTerms = {
+        flight: `flights ${route}${dates} for ${people} book fares`,
+        train: `train tickets ${route}${dates} for ${people}`,
+        bus: `bus tickets ${route}${dates} for ${people}`,
+        hotel: `hotel rooms ${route}${dates} for ${people} guests`,
+        restaurant: `restaurants ${route}${dates}`,
+        movie: `movie tickets and showtimes ${route}${dates}`
+    };
+    return searchTerms[category] || searchTerms.hotel;
+}
+
+function renderProviderSearchLinks(category, query) {
+    if (!tripProviderResults) return;
+    tripProviderResults.replaceChildren();
+
+    for (const provider of TRIP_PROVIDER_SITES[category] || []) {
+        const link = document.createElement("a");
+        const searchUrl = new URL("https://www.google.com/search");
+        searchUrl.searchParams.set("q", `site:${provider.domain} ${query}`);
+        link.href = searchUrl.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "provider-search-link";
+        link.textContent = `Find on ${provider.name} ↗`;
+        tripProviderResults.append(link);
+    }
+}
 
 function addPlaceLink(card, label, href) {
     if (!href) return;
@@ -1294,37 +1466,60 @@ if (tripSearchForm) {
         event.preventDefault();
         const location = tripLocationInput.value.trim();
         const category = tripCategorySelect.value;
+        const origin = tripOriginInput?.value.trim() || "";
+        const startDate = tripStartDateInput?.value || "";
+        const endDate = tripEndDateInput?.value || "";
+        const travellers = Math.max(1, Math.min(9, Number(tripTravellersInput?.value) || 1));
         if (location.length < 2) {
             tripSearchStatus.textContent = "Enter a destination to search.";
             return;
         }
+        if (["flight", "train", "bus"].includes(category) && origin.length < 2) {
+            tripProviderStatus.textContent = "Enter a starting city for this route.";
+            tripOriginInput?.focus();
+            return;
+        }
+        if (startDate && endDate && endDate < startDate) {
+            tripProviderStatus.textContent = "The end or return date must be after the start date.";
+            return;
+        }
 
         tripSearchForm.querySelector("button[type='submit']").disabled = true;
-        tripSearchStatus.textContent = "Searching current place listings…";
+        tripSearchStatus.textContent = "";
         tripSearchResults.replaceChildren();
+        tripProviderOutput.hidden = false;
+        tripProviderStatus.textContent = "Preparing provider searches and your travel postcard…";
+        createTripInspirationImage(location);
+        const providerQuery = buildProviderQuery(category, origin, location, startDate, endDate, travellers);
+        renderProviderSearchLinks(category, providerQuery);
+        const categoryLabel = tripCategorySelect.selectedOptions[0]?.textContent || "travel";
+        tripProviderStatus.textContent = `Search ${categoryLabel.toLowerCase()} on these provider sites. Their pages show current results and checkout options.`;
 
-        try {
-            const response = await fetch(`${API_URL}/trip/places`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ location, category })
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "The search could not be completed.");
+        if (["hotel", "restaurant"].includes(category)) {
+            tripSearchStatus.textContent = "Searching basic OpenStreetMap place listings…";
+            try {
+                const response = await fetch(`${API_URL}/trip/places`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ location, category })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || "The search could not be completed.");
+                }
+                renderPlaceResults(data);
+            } catch (error) {
+                if (error.message?.includes("Destination not found")) {
+                    tripSearchStatus.textContent = "Destination not found. Check the spelling or include the country.";
+                } else if (error.message?.includes("busy")) {
+                    tripSearchStatus.textContent = "The free map search is busy right now. Please try again shortly.";
+                } else {
+                    tripSearchStatus.textContent = "JESSY couldn’t reach the free map search. Provider links are still available above.";
+                }
             }
-            renderPlaceResults(data);
-        } catch (error) {
-            if (error.message?.includes("Destination not found")) {
-                tripSearchStatus.textContent = "Destination not found. Check the spelling or include the country.";
-            } else if (error.message?.includes("busy")) {
-                tripSearchStatus.textContent = "The free map search is busy right now. Please try again shortly.";
-            } else {
-                tripSearchStatus.textContent = "JESSY couldn’t reach the free map search. Please try again shortly.";
-            }
-        } finally {
-            tripSearchForm.querySelector("button[type='submit']").disabled = false;
         }
+
+        tripSearchForm.querySelector("button[type='submit']").disabled = false;
     });
 }
 

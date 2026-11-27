@@ -176,22 +176,51 @@
         <div class="trip-search-heading">
           <div>
             <div class="eyebrow">TRIP DISCOVERY</div>
-            <h3 id="tripSearchTitle">Search places in any destination</h3>
-            <p>Find basic hotel and restaurant listings in any destination. Your search is sent to OpenStreetMap. Data may be incomplete; live prices, room availability, and bookings are not included.</p>
+            <h3 id="tripSearchTitle">Plan your next trip</h3>
+            <p>Find provider-site searches for flights, trains, buses, stays, restaurants and movie tickets. Create a trip postcard to get inspired.</p>
           </div>
         </div>
         <form id="tripSearchForm" class="trip-search-form">
+          <label>From (if needed)
+            <input id="tripOrigin" name="origin" type="text" maxlength="120" placeholder="Starting city">
+          </label>
           <label>Destination
             <input id="tripLocation" name="location" type="text" value="Tirupati" maxlength="120" placeholder="City or destination" required>
           </label>
-          <label>Find
+          <label>Travel type
             <select id="tripCategory" name="category">
+              <option value="flight">Flights</option>
+              <option value="train">Trains</option>
+              <option value="bus">Buses</option>
               <option value="hotel">Hotels</option>
               <option value="restaurant">Restaurants</option>
+              <option value="movie">Movie tickets</option>
             </select>
           </label>
-          <button type="submit" class="trip-search-button">Search listings</button>
+          <label>Start date
+            <input id="tripStartDate" name="startDate" type="date">
+          </label>
+          <label>End date / return
+            <input id="tripEndDate" name="endDate" type="date">
+          </label>
+          <label>Travellers
+            <input id="tripTravellers" name="travellers" type="number" min="1" max="9" value="1">
+          </label>
+          <button type="submit" class="trip-search-button">Find options</button>
         </form>
+        <p class="provider-safety-note">These links open web searches focused on provider sites. Confirm the final fare, availability, taxes, fees and cancellation terms on the provider’s own site. Payment stays with the provider; JESSY never collects card details.</p>
+        <div id="tripProviderOutput" class="trip-provider-output" hidden>
+          <div class="trip-inspiration-card">
+            <img id="tripPosterPreview" alt="Generated JESSY travel inspiration illustration">
+            <div>
+              <strong>Your trip, imagined</strong>
+              <p>This browser-made postcard is an illustration, not a photograph of the destination.</p>
+              <a id="tripPosterDownload" class="place-link" download="jessy-trip-postcard.png">Download postcard</a>
+            </div>
+          </div>
+          <p id="tripProviderStatus" class="trip-search-status" aria-live="polite"></p>
+          <div id="tripProviderResults" class="trip-provider-results" aria-live="polite"></div>
+        </div>
         <p id="tripSearchStatus" class="trip-search-status" aria-live="polite"></p>
         <div id="tripSearchResults" class="trip-results" aria-live="polite"></div>
         <p class="places-attribution">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Confirm details directly with each venue.</p>
@@ -219,6 +248,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
 
 <!-- JESSY AI -->
-<script src="script.js?v=osm-search-1"></script>
+<script src="script.js?v=travel-search-hub-1"></script>
 </body>
 </html>

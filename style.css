@@ -422,7 +422,7 @@
 
 .trip-search-form {
     display: grid;
-    grid-template-columns: minmax(160px, 1fr) minmax(130px, .5fr) auto;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     align-items: end;
     gap: 12px;
     margin-top: 20px;
@@ -465,6 +465,83 @@
 .trip-search-status {
     min-height: 18px;
     margin: 15px 0 0;
+}
+
+.provider-safety-note {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(101, 181, 255, .2);
+    border-radius: 10px;
+    background: rgba(31, 91, 150, .12);
+    color: #b8c9e5;
+    font-size: 11px;
+    line-height: 1.65;
+}
+
+.trip-provider-output {
+    margin-top: 20px;
+}
+
+.trip-provider-output[hidden] {
+    display: none;
+}
+
+.trip-inspiration-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(180px, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: linear-gradient(130deg, rgba(38, 87, 140, .18), rgba(104, 77, 138, .12));
+}
+
+.trip-inspiration-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1200 / 630;
+    object-fit: cover;
+    border-radius: 9px;
+}
+
+.trip-inspiration-card strong {
+    color: #f3f7ff;
+    font: 600 16px 'Space Grotesk';
+}
+
+.trip-inspiration-card p {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.trip-provider-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.provider-search-link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 11px 13px;
+    border: 1px solid #294568;
+    border-radius: 9px;
+    background: rgba(15, 29, 51, .9);
+    color: #83c4ff;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color .2s, transform .2s, background .2s;
+}
+
+.provider-search-link:hover {
+    transform: translateY(-1px);
+    border-color: #5aa9f1;
+    background: rgba(32, 74, 120, .45);
 }
 
 .trip-results {
@@ -517,4 +594,5 @@
     .trip-search-form { grid-template-columns: 1fr; }
     .trip-results { grid-template-columns: 1fr; }
     .trip-search-button { width: 100%; }
+    .trip-inspiration-card { grid-template-columns: 1fr; }
 }

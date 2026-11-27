@@ -1217,6 +1217,123 @@ if (voiceOutputButton) {
 }
 
 // ==========================================
+// PLACE DISCOVERY
+// ==========================================
+
+const tripSearchForm = document.getElementById("tripSearchForm");
+const tripLocationInput = document.getElementById("tripLocation");
+const tripCategorySelect = document.getElementById("tripCategory");
+const tripSearchStatus = document.getElementById("tripSearchStatus");
+const tripSearchResults = document.getElementById("tripSearchResults");
+
+function addPlaceLink(card, label, href) {
+    if (!href) return;
+
+    try {
+        const url = new URL(href);
+        if (url.protocol !== "https:") return;
+
+        const link = document.createElement("a");
+        link.href = url.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label;
+        link.className = "place-link";
+        card.append(link);
+    } catch {
+        // Ignore invalid provider links.
+    }
+}
+
+function renderPlaceResults(data) {
+    tripSearchResults.replaceChildren();
+
+    if (!Array.isArray(data.places) || data.places.length === 0) {
+        tripSearchStatus.textContent = `No ${data.category} listings were returned for ${data.location}. Try a nearby city or a broader destination.`;
+        return;
+    }
+
+    tripSearchStatus.textContent = `${data.places.length} listings found for ${data.location}.`;
+
+    data.places.forEach(place => {
+        const card = document.createElement("article");
+        card.className = "place-card";
+
+        const title = document.createElement("h4");
+        title.textContent = place.name || "Place";
+        card.append(title);
+
+        if (place.address) {
+            const address = document.createElement("p");
+            address.className = "place-address";
+            address.textContent = place.address;
+            card.append(address);
+        }
+
+        const details = document.createElement("p");
+        details.className = "place-details";
+        const detailParts = [];
+        if (typeof place.rating === "number") {
+            const count = Number.isInteger(place.rating_count)
+                ? ` (${place.rating_count.toLocaleString()} reviews)`
+                : "";
+            detailParts.push(`★ ${place.rating.toFixed(1)}${count}`);
+        }
+        if (place.price_level) {
+            detailParts.push(place.price_level.replace("PRICE_LEVEL_", "").toLowerCase().replaceAll("_", " "));
+        }
+        if (typeof place.open_now === "boolean") {
+            detailParts.push(place.open_now ? "Open now" : "Not currently open");
+        }
+        details.textContent = detailParts.join(" · ");
+        if (detailParts.length) card.append(details);
+
+        const links = document.createElement("div");
+        links.className = "place-links";
+        addPlaceLink(links, "Open in Google Maps", place.maps_url);
+        addPlaceLink(links, "Venue website", place.website);
+        if (links.childElementCount) card.append(links);
+
+        tripSearchResults.append(card);
+    });
+}
+
+if (tripSearchForm) {
+    tripSearchForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        const location = tripLocationInput.value.trim();
+        const category = tripCategorySelect.value;
+        if (location.length < 2) {
+            tripSearchStatus.textContent = "Enter a destination to search.";
+            return;
+        }
+
+        tripSearchForm.querySelector("button[type='submit']").disabled = true;
+        tripSearchStatus.textContent = "Searching current place listings…";
+        tripSearchResults.replaceChildren();
+
+        try {
+            const response = await fetch(`${API_URL}/trip/places`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ location, category })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || "The search could not be completed.");
+            }
+            renderPlaceResults(data);
+        } catch (error) {
+            tripSearchStatus.textContent = error.message === "Live place search is not configured yet."
+                ? "Live place search is not set up yet. The site owner needs to add the Google Places key in Render."
+                : "JESSY couldn’t reach the place search right now. Please try again shortly.";
+        } finally {
+            tripSearchForm.querySelector("button[type='submit']").disabled = false;
+        }
+    });
+}
+
+// ==========================================
 // CHAT SEARCH
 // ==========================================
 

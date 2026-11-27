@@ -162,19 +162,6 @@
 <p id="voiceCommandStatus" class="voice-command-status" aria-live="polite">
     Enable voice command to let your browser listen for “Hey Jessy” while this page is open.
 </p>
-    <input
-        id="chatInput"
-        type="text"
-        placeholder="Ask JESSY something..."
-        autocomplete="off"
-        aria-label="Message JESSY AI"
-    >
-
-    <button type="submit" id="sendButton">
-        ↑
-    </button>
-</form>
-
       <p class="chat-note">
         Powered by JESSY AI · UBINTZE TECHNOLOGIES
       </p>
@@ -184,11 +171,31 @@
   </div>
 
 </div>
-        <div class="chat-top"><div class="chat-avatar">J</div><div><strong>JESSY AI</strong><small><span class="tiny-dot"></span> Website preview</small></div><span class="preview-label">PREVIEW MODE</span></div>
-        <div class="chat-messages" id="chatMessages"><div class="message assistant">Hi! I'm JESSY AI. Ask me what you'd like to learn, create or build. This preview demonstrates the chat interface.</div></div>
-        <form id="chatForm" class="chat-form"><input id="chatInput" type="text" placeholder="Ask JESSY something..." autocomplete="off" aria-label="Message JESSY AI"><button type="submit" aria-label="Send message">↑</button></form>
-        <p class="chat-note">Preview only — real responses require a deployed and secured AI backend.</p>
-      </div>
+
+      <section class="trip-search" aria-labelledby="tripSearchTitle">
+        <div class="trip-search-heading">
+          <div>
+            <div class="eyebrow">TRIP DISCOVERY</div>
+            <h3 id="tripSearchTitle">Search places in any destination</h3>
+            <p>Find hotel and restaurant listings in one place. Hotel prices and room availability need a booking provider and are not confirmed here.</p>
+          </div>
+        </div>
+        <form id="tripSearchForm" class="trip-search-form">
+          <label>Destination
+            <input id="tripLocation" name="location" type="text" value="Tirupati" maxlength="120" placeholder="City or destination" required>
+          </label>
+          <label>Find
+            <select id="tripCategory" name="category">
+              <option value="hotel">Hotels</option>
+              <option value="restaurant">Restaurants</option>
+            </select>
+          </label>
+          <button type="submit" class="trip-search-button">Search listings</button>
+        </form>
+        <p id="tripSearchStatus" class="trip-search-status" aria-live="polite"></p>
+        <div id="tripSearchResults" class="trip-results" aria-live="polite"></div>
+        <p class="places-attribution">Place details provided by Google Places. Confirm details with each provider before booking.</p>
+      </section>
     </section>
 
     <section class="closing section-wrap"><div class="closing-card"><div class="eyebrow">THE NEXT IDEA STARTS HERE</div><h2>Make room for<br><span class="gradient-text">what's possible.</span></h2><a href="#demo" class="button primary">Explore JESSY AI →</a></div></section>

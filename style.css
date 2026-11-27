@@ -396,3 +396,125 @@
 .export-chat-button:hover {
     background: rgba(37,135,237,0.2);
 }
+
+/* DESTINATION PLACE SEARCH */
+.trip-search {
+    margin: 22px auto 0;
+    max-width: 900px;
+    padding: 26px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: linear-gradient(145deg, #101a30, #0a1020);
+}
+
+.trip-search-heading h3 {
+    margin: 10px 0 8px;
+    font: 600 22px 'Space Grotesk';
+}
+
+.trip-search-heading p,
+.trip-search-status,
+.places-attribution {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.trip-search-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(130px, .5fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.trip-search-form label {
+    display: grid;
+    gap: 7px;
+    color: #b8c9e5;
+    font-size: 11px;
+}
+
+.trip-search-form input,
+.trip-search-form select {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #263a5c;
+    border-radius: 8px;
+    background: #080f1e;
+    color: white;
+}
+
+.trip-search-button {
+    min-height: 42px;
+    padding: 0 17px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(100deg, #167ce8, #5b8cff);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.trip-search-button:disabled {
+    opacity: .55;
+    cursor: wait;
+}
+
+.trip-search-status {
+    min-height: 18px;
+    margin: 15px 0 0;
+}
+
+.trip-results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.place-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #0b1426;
+}
+
+.place-card h4 {
+    margin: 0 0 7px;
+    font: 600 15px 'Space Grotesk';
+}
+
+.place-address,
+.place-details {
+    margin: 5px 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.place-links {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.place-link {
+    color: #72bdff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.places-attribution {
+    margin: 15px 0 0;
+    font-size: 10px;
+}
+
+@media(max-width:600px) {
+    .trip-search { padding: 19px; }
+    .trip-search-form { grid-template-columns: 1fr; }
+    .trip-results { grid-template-columns: 1fr; }
+    .trip-search-button { width: 100%; }
+}

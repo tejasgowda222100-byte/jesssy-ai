@@ -1,7 +1,10 @@
 import logging
+import json
 import os
 from pathlib import Path
 from typing import Literal
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -102,6 +105,13 @@ class ChatRequest(BaseModel):
     web_search: bool = False
 
 
+class PlaceSearchRequest(BaseModel):
+
+    location: str = Field(min_length=2, max_length=120)
+
+    category: Literal["hotel", "restaurant"]
+
+
 # ------------------------------------------
 # JESSY AI IDENTITY AND PERSONALITY
 # ------------------------------------------
@@ -163,6 +173,26 @@ YOUR PERSONALITY:
 11. Be professional, confident and conversational.
 
 12. Give useful and accurate answers.
+
+BOOKING AND LIVE TRAVEL REQUESTS:
+
+1. The website's Trip Discovery panel can search Google Places for hotel and
+   restaurant listings. JESSY has no direct reservation, transport-ticket,
+   or movie-ticket booking provider connected. Do not claim a search was run
+   unless it was, and never claim a reservation, payment, cancellation, or
+   ticket purchase succeeded without provider confirmation.
+2. Never invent live prices, taxes, booking charges, room inventory, seats,
+   schedules, or availability. Explain that these require a live authorized
+   provider result and may change before checkout.
+3. If the user asks to plan or book a trip, help collect the missing details
+   (destination, dates, guests or passengers, budget, and preferences) in the
+   user's language. Clearly distinguish planning advice from a live search.
+4. Public web results and Google Places listings do not confirm hotel room
+   inventory, ticket availability, final fees, or complete a booking. State
+   this limitation when relevant.
+5. Only report a confirmed booking after a connected provider returns a
+   confirmation, and show the provider's final amount and terms before the
+   user approves payment.
 
 You are JESSY AI, proudly developed by UBINTZE TECHNOLOGIES.
 """
@@ -247,6 +277,89 @@ def health():
         "founder": "TEJAS GOWDA",
         "ai_provider": "Groq",
         "model": MODEL
+    }
+
+
+@app.post("/trip/places")
+def search_trip_places(request: PlaceSearchRequest):
+
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Live place search is not configured yet."
+        )
+
+    place_type = "hotel" if request.category == "hotel" else "restaurant"
+    search_word = "hotels" if request.category == "hotel" else "restaurants"
+    payload = json.dumps({
+        "textQuery": f"{search_word} in {request.location.strip()}",
+        "includedType": place_type,
+        "strictTypeFiltering": True,
+        "languageCode": "en",
+        "pageSize": 20,
+    }).encode("utf-8")
+
+    provider_request = Request(
+        "https://places.googleapis.com/v1/places:searchText",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": api_key,
+            "X-Goog-FieldMask": (
+                "places.id,places.displayName,places.formattedAddress,"
+                "places.rating,places.userRatingCount,places.priceLevel,"
+                "places.websiteUri,places.googleMapsUri,"
+                "places.currentOpeningHours.openNow"
+            ),
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(provider_request, timeout=12) as provider_response:
+            provider_data = json.loads(provider_response.read().decode("utf-8"))
+    except HTTPError as error:
+        logger.warning("Google Places returned HTTP %s", error.code)
+        raise HTTPException(
+            status_code=502,
+            detail="The place search provider could not complete the search."
+        ) from error
+    except (URLError, TimeoutError, json.JSONDecodeError) as error:
+        logger.warning("Google Places request failed: %s", type(error).__name__)
+        raise HTTPException(
+            status_code=502,
+            detail="The place search provider is temporarily unavailable."
+        ) from error
+
+    places = []
+    for place in provider_data.get("places", []):
+        opening_hours = place.get("currentOpeningHours") or {}
+        places.append({
+            "id": place.get("id"),
+            "name": (place.get("displayName") or {}).get("text", "Place"),
+            "address": place.get("formattedAddress", ""),
+            "rating": place.get("rating"),
+            "rating_count": place.get("userRatingCount"),
+            "price_level": place.get("priceLevel"),
+            "open_now": opening_hours.get("openNow"),
+            "website": place.get("websiteUri"),
+            "maps_url": place.get("googleMapsUri"),
+        })
+
+    return {
+        "location": request.location.strip(),
+        "category": request.category,
+        "places": places,
+        "source": "Google Places",
+        "availability_verified": False,
+        "message": (
+            "These are place listings. Hotel room availability, nightly rates, "
+            "and booking charges are not confirmed by this search."
+            if request.category == "hotel"
+            else "Restaurant listing details may change; confirm directly with the venue."
+        ),
     }
 
 

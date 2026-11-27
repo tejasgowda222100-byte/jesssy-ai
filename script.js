@@ -1376,7 +1376,7 @@ async function loadDestinationPhoto(destination) {
 
         const imageUrl = new URL(selected.info.thumburl);
         const descriptionUrl = new URL(selected.info.descriptionurl);
-        if (imageUrl.protocol !== "https:" || imageUrl.hostname !== "upload.wikimedia.org") return;
+        if (imageUrl.protocol !== "https:" || !["upload.wikimedia.org", "thumb.wikimedia.org"].includes(imageUrl.hostname)) return;
         if (descriptionUrl.protocol !== "https:" || descriptionUrl.hostname !== "commons.wikimedia.org") return;
 
         const metadata = selected.info.extmetadata || {};

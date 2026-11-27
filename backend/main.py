@@ -35,20 +35,24 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jessy_ai")
 
-NOMINATIM_API_URL = os.getenv(
-    "NOMINATIM_API_URL",
-    "https://nominatim.openstreetmap.org/search"
+PHOTON_API_URL = os.getenv(
+    "PHOTON_API_URL",
+    "https://photon.komoot.io/api/"
 )
 OVERPASS_API_URL = os.getenv(
     "OVERPASS_API_URL",
     "https://overpass-api.de/api/interpreter"
 )
+OVERPASS_FALLBACK_API_URL = os.getenv(
+    "OVERPASS_FALLBACK_API_URL",
+    "https://overpass.private.coffee/api/interpreter"
+)
 OSM_USER_AGENT = "JESSY-AI/1.0 (https://jesssy-ai.onrender.com)"
 OSM_CACHE_TTL_SECONDS = 900
 _OSM_CACHE = {}
 _OSM_SEARCH_LOCK = threading.Lock()
-_NOMINATIM_RATE_LOCK = threading.Lock()
-_LAST_NOMINATIM_REQUEST = 0.0
+_GEOCODER_RATE_LOCK = threading.Lock()
+_LAST_GEOCODER_REQUEST = 0.0
 
 
 # ------------------------------------------
@@ -316,27 +320,26 @@ def search_trip_places(request: PlaceSearchRequest):
 
         geocode_params = urlencode({
             "q": location,
-            "format": "jsonv2",
             "limit": 1,
         })
         geocode_request = Request(
-            f"{NOMINATIM_API_URL}?{geocode_params}",
+            f"{PHOTON_API_URL}?{geocode_params}",
             headers={
                 "User-Agent": OSM_USER_AGENT,
                 "Accept": "application/json",
             },
         )
 
-        global _LAST_NOMINATIM_REQUEST
-        with _NOMINATIM_RATE_LOCK:
-            elapsed = time.monotonic() - _LAST_NOMINATIM_REQUEST
+        global _LAST_GEOCODER_REQUEST
+        with _GEOCODER_RATE_LOCK:
+            elapsed = time.monotonic() - _LAST_GEOCODER_REQUEST
             if elapsed < 1.05:
                 time.sleep(1.05 - elapsed)
-            _LAST_NOMINATIM_REQUEST = time.monotonic()
+            _LAST_GEOCODER_REQUEST = time.monotonic()
 
         try:
             with urlopen(geocode_request, timeout=8) as response:
-                geocode_results = json.loads(response.read().decode("utf-8"))
+                geocode_data = json.loads(response.read().decode("utf-8"))
         except HTTPError as error:
             logger.warning("OpenStreetMap geocoder returned HTTP %s", error.code)
             raise HTTPException(
@@ -344,21 +347,23 @@ def search_trip_places(request: PlaceSearchRequest):
                 detail="OpenStreetMap search is busy. Please try again shortly."
             ) from error
         except (URLError, TimeoutError, json.JSONDecodeError) as error:
-            logger.warning("OpenStreetMap geocoding failed: %s", type(error).__name__)
+            logger.warning("Photon geocoding failed: %s", type(error).__name__)
             raise HTTPException(
                 status_code=502,
                 detail="OpenStreetMap search is temporarily unavailable."
             ) from error
 
-        if not geocode_results:
+        geocode_features = geocode_data.get("features", [])
+        if not geocode_features:
             raise HTTPException(
                 status_code=404,
                 detail="Destination not found. Check the spelling and try again."
             )
 
         try:
-            latitude = float(geocode_results[0]["lat"])
-            longitude = float(geocode_results[0]["lon"])
+            coordinates = geocode_features[0]["geometry"]["coordinates"]
+            longitude = float(coordinates[0])
+            latitude = float(coordinates[1])
         except (KeyError, TypeError, ValueError) as error:
             raise HTTPException(
                 status_code=502,
@@ -379,36 +384,54 @@ def search_trip_places(request: PlaceSearchRequest):
         overpass_query = (
             "[out:json][timeout:12];"
             f"(nwr(around:10000,{latitude},{longitude}){place_filter};);"
-            "out center tags 30;"
+            "out center 30;"
         )
-        overpass_request = Request(
+        provider_data = None
+        last_overpass_error = None
+        overpass_urls = list(dict.fromkeys([
             OVERPASS_API_URL,
-            data=urlencode({"data": overpass_query}).encode("utf-8"),
-            headers={
-                "User-Agent": OSM_USER_AGENT,
-                "Accept": "application/json",
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            method="POST",
-        )
+            OVERPASS_FALLBACK_API_URL,
+        ]))
+        for overpass_url in overpass_urls:
+            overpass_request = Request(
+                overpass_url,
+                data=urlencode({"data": overpass_query}).encode("utf-8"),
+                headers={
+                    "User-Agent": OSM_USER_AGENT,
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                method="POST",
+            )
+            try:
+                with urlopen(overpass_request, timeout=18) as response:
+                    provider_data = json.loads(response.read().decode("utf-8"))
+                break
+            except HTTPError as error:
+                last_overpass_error = error
+                logger.warning("Overpass endpoint returned HTTP %s", error.code)
+            except (URLError, TimeoutError, json.JSONDecodeError) as error:
+                last_overpass_error = error
+                logger.warning("Overpass endpoint failed: %s", type(error).__name__)
 
-        try:
-            with urlopen(overpass_request, timeout=18) as response:
-                provider_data = json.loads(response.read().decode("utf-8"))
-        except HTTPError as error:
-            logger.warning("Overpass returned HTTP %s", error.code)
-            raise HTTPException(
-                status_code=503,
-                detail="OpenStreetMap search is busy. Please try again shortly."
-            ) from error
-        except (URLError, TimeoutError, json.JSONDecodeError) as error:
-            logger.warning("Overpass request failed: %s", type(error).__name__)
+        if provider_data is None:
+            if isinstance(last_overpass_error, HTTPError):
+                raise HTTPException(
+                    status_code=503,
+                    detail="OpenStreetMap search is busy. Please try again shortly."
+                ) from last_overpass_error
             raise HTTPException(
                 status_code=502,
                 detail="OpenStreetMap search is temporarily unavailable."
-            ) from error
+            ) from last_overpass_error
 
-        resolved_location = geocode_results[0].get("display_name", location)
+        properties = geocode_features[0].get("properties", {})
+        resolved_location = ", ".join(filter(None, [
+            properties.get("name"),
+            properties.get("city") or properties.get("town"),
+            properties.get("state"),
+            properties.get("country"),
+        ])) or location
         places = []
         for element in provider_data.get("elements", []):
             tags = element.get("tags") or {}

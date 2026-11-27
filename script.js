@@ -1240,43 +1240,48 @@ const tripDestinationPhotoCredit = document.getElementById("tripDestinationPhoto
 const tripDestinationPhotoLink = document.getElementById("tripDestinationPhotoLink");
 const tripPlanMode = document.getElementById("tripPlanMode");
 const tripPlanSteps = document.getElementById("tripPlanSteps");
+const tripDailyPlan = document.getElementById("tripDailyPlan");
 const tripPlanNotice = document.getElementById("tripPlanNotice");
 
 const TRIP_PROVIDER_SITES = {
     flight: [
-        { name: "Google Flights", domain: "google.com/travel/flights" },
-        { name: "Skyscanner", domain: "skyscanner.net" },
-        { name: "KAYAK", domain: "kayak.com/flights" },
-        { name: "Expedia", domain: "expedia.com/Flights" }
+        { name: "Google Flights", url: "https://www.google.com/travel/flights" },
+        { name: "Skyscanner", url: "https://www.skyscanner.net/" },
+        { name: "KAYAK", url: "https://www.kayak.com/flights" },
+        { name: "Expedia", url: "https://www.expedia.com/Flights" }
     ],
     train: [
-        { name: "Trainline", domain: "thetrainline.com" },
-        { name: "Omio", domain: "omio.com" },
-        { name: "Rail Europe", domain: "raileurope.com" },
-        { name: "IRCTC (India)", domain: "irctc.co.in" }
+        { name: "Trainline", url: "https://www.thetrainline.com/" },
+        { name: "Omio", url: "https://www.omio.com/" },
+        { name: "Rail Europe", url: "https://www.raileurope.com/" },
+        { name: "IRCTC (India)", url: "https://www.irctc.co.in/nget/train-search" }
     ],
     bus: [
-        { name: "Busbud", domain: "busbud.com" },
-        { name: "FlixBus", domain: "flixbus.com" },
-        { name: "redBus", domain: "redbus.in" },
-        { name: "Omio", domain: "omio.com" }
+        { name: "Busbud", url: "https://www.busbud.com/" },
+        { name: "FlixBus", url: "https://www.flixbus.com/" },
+        { name: "redBus", url: "https://www.redbus.in/" },
+        { name: "Omio", url: "https://www.omio.com/" }
     ],
     hotel: [
-        { name: "Booking.com", domain: "booking.com" },
-        { name: "Agoda", domain: "agoda.com" },
-        { name: "Expedia", domain: "expedia.com" }
+        { name: "Booking.com", url: "https://www.booking.com/" },
+        { name: "Agoda", url: "https://www.agoda.com/" },
+        { name: "Expedia", url: "https://www.expedia.com/" }
     ],
     restaurant: [
-        { name: "Google Maps", domain: "google.com/maps" },
-        { name: "OpenTable", domain: "opentable.com" },
-        { name: "Tripadvisor", domain: "tripadvisor.com" }
+        { name: "Google Maps", url: "https://www.google.com/maps/" },
+        { name: "OpenTable", url: "https://www.opentable.com/" },
+        { name: "Tripadvisor", url: "https://www.tripadvisor.com/" }
     ],
     movie: [
-        { name: "BookMyShow", domain: "bookmyshow.com" },
-        { name: "Ticketmaster", domain: "ticketmaster.com" },
-        { name: "Fandango", domain: "fandango.com" }
+        { name: "BookMyShow", url: "https://in.bookmyshow.com/" },
+        { name: "Ticketmaster", url: "https://www.ticketmaster.com/" },
+        { name: "Fandango", url: "https://www.fandango.com/" }
     ]
 };
+
+const TTD_ANNAPRASADAM_URL = "https://www.tirumala.org/SRIVENKATESWARAANNAPRASADAMTRUST.aspx";
+const TTD_ACCOMMODATION_URL = "https://www.tirumala.org/accomdationattirumala.aspx";
+const TTD_NEWS_URL = "https://news.tirumala.org/";
 
 const DESTINATION_PHOTO_CACHE = new Map();
 
@@ -1289,6 +1294,163 @@ function formatTripDate(value) {
         month: "short",
         day: "numeric"
     });
+}
+
+function makeGoogleSearchUrl(query, maps = false) {
+    const url = new URL(maps ? "https://www.google.com/maps/search/" : "https://www.google.com/search");
+    if (maps) {
+        url.searchParams.set("api", "1");
+        url.searchParams.set("query", query);
+    } else {
+        url.searchParams.set("q", query);
+    }
+    return url.href;
+}
+
+function addJourneyLink(parent, label, href) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = label;
+    link.className = "journey-plan-link";
+    parent.append(link);
+}
+
+function makeJourneyDay(date) {
+    const weekday = date.toLocaleDateString(undefined, { weekday: "long" });
+    const dateText = date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    return { date, weekday, dateText };
+}
+
+function getJourneyDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function buildDailyPlan(destination, origin, startDate, endDate) {
+    if (!startDate || !endDate) return { days: [], omitted: false };
+    const [sy, sm, sd] = startDate.split("-").map(Number);
+    const [ey, em, ed] = endDate.split("-").map(Number);
+    const start = new Date(sy, sm - 1, sd);
+    const end = new Date(ey, em - 1, ed);
+    const dayCount = Math.floor((end - start) / 86400000) + 1;
+    if (!Number.isFinite(dayCount) || dayCount < 1) return { days: [], omitted: false };
+
+    const days = [];
+    for (let index = 0; index < Math.min(dayCount, 14); index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        days.push(makeJourneyDay(date));
+    }
+    return { days, omitted: dayCount > days.length };
+}
+
+function addMealRow(list, time, meal, destination, isTirupati, ttdMeal) {
+    const item = document.createElement("li");
+    item.textContent = `${time} · ${meal}`;
+    if (isTirupati && ttdMeal) {
+        item.append(document.createTextNode(" — TTD lists Annaprasadam service; check today's details."));
+        addJourneyLink(item, "TTD meal details", TTD_ANNAPRASADAM_URL);
+    } else {
+        item.append(document.createTextNode(" — choose a nearby option:"));
+        addJourneyLink(item, `Google Maps ${meal.toLowerCase()}`, makeGoogleSearchUrl(`${meal} in ${destination}`, true));
+    }
+    list.append(item);
+}
+
+function renderDailyPlan(destination, origin, startDate, endDate) {
+    if (!tripDailyPlan) return;
+    tripDailyPlan.replaceChildren();
+    const { days, omitted } = buildDailyPlan(destination, origin, startDate, endDate);
+    if (!days.length) return;
+
+    const isTirupati = /tirupati|tirumala/i.test(destination);
+    days.forEach((day, index) => {
+        const item = document.createElement("li");
+        item.className = "journey-day";
+        const heading = document.createElement("h5");
+        heading.textContent = `Day ${index + 1} · ${day.weekday}, ${day.dateText}`;
+        item.append(heading);
+
+        const schedule = document.createElement("ul");
+        schedule.className = "journey-day-schedule";
+        if (index === 0) {
+            const travel = document.createElement("li");
+            travel.textContent = `Travel · ${origin || "starting point"} to ${destination}: use your ticket's confirmed departure and arrival times.`;
+            item.append(schedule);
+            schedule.append(travel);
+            addMealRow(schedule, "09:00–10:30", "Breakfast", destination, isTirupati, true);
+            const stay = document.createElement("li");
+            stay.textContent = "After arrival · check in, leave bags and rest; confirm check-in with your stay.";
+            addJourneyLink(stay, "Find stays on Google Maps", makeGoogleSearchUrl(`hotels and stays in ${destination}`, true));
+            if (isTirupati) addJourneyLink(stay, "TTD accommodation", TTD_ACCOMMODATION_URL);
+            schedule.append(stay);
+            addMealRow(schedule, "12:30", "Lunch", destination, isTirupati, true);
+            const visit = document.createElement("li");
+            visit.textContent = `16:00 · easy local visit in ${destination}; check current opening times.`;
+            addJourneyLink(visit, "Find places on Google Maps", makeGoogleSearchUrl(`temples and places to visit in ${destination}`, true));
+            schedule.append(visit);
+            const event = document.createElement("li");
+            const eventQuery = `${destination} events ${day.dateText} official calendar`;
+            event.textContent = `18:00 · check current events for ${day.dateText}.`;
+            addJourneyLink(event, "Search current events on Google", makeGoogleSearchUrl(eventQuery));
+            if (isTirupati) addJourneyLink(event, "TTD news and events", TTD_NEWS_URL);
+            if (isTirupati && getJourneyDateKey(day.date) === "2026-11-27") {
+                event.append(document.createTextNode(" · TTD lists Sri Andal Ammavaru's procession at 6:00 PM in Tirupati."));
+            }
+            schedule.append(event);
+            addMealRow(schedule, "19:00", "Dinner", destination, isTirupati, true);
+        } else if (index === days.length - 1) {
+            const morning = document.createElement("li");
+            morning.textContent = `06:30 · morning visit in ${destination}; for temple darshan, follow your confirmed slot and official instructions.`;
+            addJourneyLink(morning, "Find places on Google Maps", makeGoogleSearchUrl(`temples and places to visit in ${destination}`, true));
+            schedule.append(morning);
+            addMealRow(schedule, "09:00–10:30", "Breakfast", destination, isTirupati, true);
+            const checkout = document.createElement("li");
+            checkout.textContent = "11:00 · check out and confirm your return departure time.";
+            schedule.append(checkout);
+            addMealRow(schedule, "12:30", "Lunch", destination, isTirupati, true);
+            const returnTrip = document.createElement("li");
+            returnTrip.textContent = `Return · ${destination} to ${origin || "home"}: use your ticket's confirmed schedule.`;
+            schedule.append(returnTrip);
+        } else {
+            const morning = document.createElement("li");
+            morning.textContent = isTirupati
+                ? "06:00 · travel to Tirumala for your booked darshan slot; queue time and entry depend on TTD's live instructions."
+                : `09:00 · visit a top local attraction in ${destination}; check today's opening hours.`;
+            addJourneyLink(morning, "Find places on Google Maps", makeGoogleSearchUrl(`places to visit in ${destination}`, true));
+            schedule.append(morning);
+            addMealRow(schedule, "09:00–10:30", "Breakfast", destination, isTirupati, true);
+
+            const event = document.createElement("li");
+            event.textContent = `11:00 · check events scheduled for ${day.dateText}.`;
+            const eventQuery = `${destination} events ${day.dateText} official calendar`;
+            addJourneyLink(event, "Search current events on Google", makeGoogleSearchUrl(eventQuery));
+            if (isTirupati) addJourneyLink(event, "TTD news and events", TTD_NEWS_URL);
+            if (isTirupati && getJourneyDateKey(day.date) === "2026-11-27") {
+                event.append(document.createTextNode(" · TTD lists Sri Andal Ammavaru's procession at 6:00 PM in Tirupati."));
+            }
+            schedule.append(event);
+            addMealRow(schedule, "12:30", "Lunch", destination, isTirupati, true);
+            const afternoon = document.createElement("li");
+            afternoon.textContent = "14:00 · rest and leave a buffer for travel, queues or schedule changes.";
+            schedule.append(afternoon);
+            const evening = document.createElement("li");
+            evening.textContent = isTirupati ? "18:00 · local temple or scheduled procession; verify today's TTD notice before going." : `18:00 · evening activity in ${destination}; confirm its current schedule.`;
+            addJourneyLink(evening, "Open event search", makeGoogleSearchUrl(eventQuery));
+            schedule.append(evening);
+            addMealRow(schedule, "19:00", "Dinner", destination, isTirupati, true);
+        }
+        item.append(schedule);
+        tripDailyPlan.append(item);
+    });
+
+    if (omitted) {
+        const note = document.createElement("li");
+        note.className = "journey-day-overflow";
+        note.textContent = "For longer trips, this preview shows the first 14 days. Repeat the flexible sightseeing and meal pattern for the remaining dates.";
+        tripDailyPlan.append(note);
+    }
 }
 
 function renderJourneyPlan(category, origin, destination, startDate, endDate, travellers) {
@@ -1328,9 +1490,9 @@ function renderJourneyPlan(category, origin, destination, startDate, endDate, tr
         tripPlanSteps.append(item);
     });
 
-    tripPlanNotice.textContent = ["flight", "train", "bus"].includes(category)
-        ? "Plan built from your entries. Live departure times, delays, prices, seat availability and payment are not verified in JESSY."
-        : "Plan built from your entries. Confirm opening times, availability, prices and any booking directly with the provider.";
+    renderDailyPlan(destination, origin, startDate, endDate);
+
+    tripPlanNotice.textContent = "Daily times are suggested planning blocks, not live schedules. JESSY does not verify tickets, darshan slots, restaurant hours, event availability, room availability or prices; follow official/provider updates and your confirmed bookings.";
 }
 
 async function loadDestinationPhoto(destination) {
@@ -1495,7 +1657,7 @@ function createTripInspirationImage(destination) {
 
 function buildProviderQuery(category, origin, destination, startDate, endDate, travellers) {
     const route = origin ? `from ${origin} to ${destination}` : `in ${destination}`;
-    const dateText = [startDate, endDate].filter(Boolean).join(" to ");
+    const dateText = [startDate, endDate].filter(Boolean).map(formatTripDate).join(" to ");
     const dates = dateText ? ` for ${dateText}` : "";
     const people = travellers === 1 ? "1 traveller" : `${travellers} travellers`;
     const searchTerms = {
@@ -1515,15 +1677,21 @@ function renderProviderSearchLinks(category, query) {
 
     for (const provider of TRIP_PROVIDER_SITES[category] || []) {
         const link = document.createElement("a");
-        const searchUrl = new URL("https://www.google.com/search");
-        searchUrl.searchParams.set("q", `site:${provider.domain} ${query}`);
-        link.href = searchUrl.href;
+        link.href = provider.url;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.className = "provider-search-link";
-        link.textContent = `Find on ${provider.name} ↗`;
+        link.textContent = `Open ${provider.name} ↗`;
         tripProviderResults.append(link);
     }
+
+    const googleLink = document.createElement("a");
+    googleLink.href = makeGoogleSearchUrl(query);
+    googleLink.target = "_blank";
+    googleLink.rel = "noopener noreferrer";
+    googleLink.className = "provider-search-link provider-google-link";
+    googleLink.textContent = "Search Google for this trip ↗";
+    tripProviderResults.append(googleLink);
 }
 
 function addPlaceLink(card, label, href) {
@@ -1624,8 +1792,8 @@ if (tripSearchForm) {
         renderProviderSearchLinks(category, providerQuery);
         const categoryLabel = tripCategorySelect.selectedOptions[0]?.textContent || "travel";
         tripProviderStatus.textContent = ["flight", "train", "bus"].includes(category)
-            ? `Search ${categoryLabel.toLowerCase()} on these provider sites. JESSY cannot verify live times, seats or fares yet.`
-            : `Search ${categoryLabel.toLowerCase()} on these provider sites. Confirm current details and checkout with the provider.`;
+            ? `Open a provider or search Google for ${categoryLabel.toLowerCase()} options. JESSY cannot verify live times, seats or fares yet.`
+            : `Open a provider or search Google for ${categoryLabel.toLowerCase()} options. Confirm current details and checkout with the provider.`;
 
         if (["hotel", "restaurant"].includes(category)) {
             tripSearchStatus.textContent = "Searching basic OpenStreetMap place listings…";

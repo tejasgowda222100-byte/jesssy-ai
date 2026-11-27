@@ -621,6 +621,54 @@
     font-weight: 700;
 }
 
+.journey-daily-plan {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.journey-day {
+    padding: 14px;
+    border: 1px solid rgba(101, 181, 255, .16);
+    border-radius: 11px;
+    background: rgba(8, 18, 34, .6);
+}
+
+.journey-day h5 {
+    margin: 0 0 10px;
+    color: #a6d7ff;
+    font: 600 13px 'Space Grotesk';
+}
+
+.journey-day-schedule {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding-left: 17px;
+    color: #d4e0f4;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.journey-day-schedule li::marker {
+    color: #72bdff;
+}
+
+.journey-plan-link {
+    display: inline-block;
+    margin-left: 7px;
+    color: #83c4ff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.journey-day-overflow {
+    color: var(--muted);
+    font-size: 10px;
+}
+
 .journey-plan-notice {
     margin: 12px 0 0;
     color: var(--muted);
@@ -654,6 +702,11 @@
     transform: translateY(-1px);
     border-color: #5aa9f1;
     background: rgba(32, 74, 120, .45);
+}
+
+.provider-google-link {
+    border-color: rgba(91, 169, 241, .55);
+    background: rgba(32, 74, 120, .28);
 }
 
 .trip-results {

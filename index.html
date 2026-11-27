@@ -177,7 +177,7 @@
           <div>
             <div class="eyebrow">TRIP DISCOVERY</div>
             <h3 id="tripSearchTitle">Plan your next trip</h3>
-            <p>Find provider-site searches for flights, trains, buses, stays, restaurants and movie tickets. Create a trip postcard to get inspired.</p>
+            <p>Compare travel providers, then build a dated day-by-day plan with meal, stay, temple and event search links.</p>
           </div>
         </div>
         <form id="tripSearchForm" class="trip-search-form">
@@ -208,7 +208,7 @@
           </label>
           <button type="submit" class="trip-search-button">Find options</button>
         </form>
-        <p class="provider-safety-note">Live vehicle times, seats, fares and in-app UPI checkout are not connected yet. Provider links may help you find current options; verify the final total and terms on the provider’s own site. Never share a UPI PIN with JESSY.</p>
+        <p class="provider-safety-note">Ticket inventory, live event feeds and in-app UPI checkout are not connected yet. Provider links open the provider or a Google search; confirm availability, schedules, prices and terms there. Never share a UPI PIN with JESSY.</p>
         <div id="tripProviderOutput" class="trip-provider-output" hidden>
           <div class="trip-inspiration-card">
             <img id="tripPosterPreview" alt="Generated JESSY travel inspiration illustration">
@@ -235,6 +235,7 @@
               <span id="tripPlanMode" class="trip-mode-badge"></span>
             </div>
             <ol id="tripPlanSteps" class="journey-plan-steps"></ol>
+            <ol id="tripDailyPlan" class="journey-daily-plan"></ol>
             <p id="tripPlanNotice" class="journey-plan-notice"></p>
           </section>
           <p id="tripProviderStatus" class="trip-search-status" aria-live="polite"></p>

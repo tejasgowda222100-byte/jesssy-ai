@@ -32,7 +32,9 @@ const exportChatButton = document.getElementById("exportChatButton");
 const conversationList = document.getElementById("conversationList");
 
 const voiceInputButton = document.getElementById("voiceInputButton");
+const wakeWordButton = document.getElementById("wakeWordButton");
 const voiceOutputButton = document.getElementById("voiceOutputButton");
+const voiceCommandStatus = document.getElementById("voiceCommandStatus");
 
 const yearElement = document.getElementById("year");
 
@@ -48,6 +50,20 @@ let isSending = false;
 let voiceEnabled = false;
 let recognition = null;
 let isListening = false;
+let recognitionStarting = false;
+let microphonePermissionError = false;
+let recognitionMode = "dictation";
+let wakeWordEnabled = false;
+let pendingDictationStart = false;
+let pendingVoiceCommand = "";
+let wakeRetryTimer = null;
+
+const VOICE_ICONS = {
+    microphone: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"></path></svg>',
+    wake: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10v4m4-8v12m4-15v18m4-14v10m4-7v4"></path></svg>',
+    speaker: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path><path d="M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"></path></svg>',
+    muted: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path><path d="m17 9 5 6m0-6-5 6"></path></svg>'
+};
 
 // ==========================================
 // INITIALIZATION
@@ -706,6 +722,14 @@ async function sendMessage(text) {
 
     if (!text || !text.trim() || isSending) return;
 
+    if (
+        wakeWordEnabled &&
+        isListening &&
+        recognitionMode === "wake"
+    ) {
+        recognition.stop();
+    }
+
     if (!chatMessages || !chatInput) {
 
         console.error("Chat elements missing.");
@@ -860,6 +884,10 @@ async function sendMessage(text) {
         }
 
         chatInput.focus();
+
+        if (wakeWordEnabled) {
+            scheduleWakeWordRestart(600);
+        }
     }
 }
 
@@ -904,114 +932,259 @@ const SpeechRecognitionAPI =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
-if (voiceInputButton) {
-
-    if (SpeechRecognitionAPI) {
-
-        recognition = new SpeechRecognitionAPI();
-
-        recognition.continuous = false;
-
-        recognition.interimResults = false;
-
-        recognition.lang = "en-IN";
-
-        voiceInputButton.addEventListener("click", () => {
-
-            if (isListening) {
-
-                recognition.stop();
-
-                return;
-            }
-
-            try {
-
-                recognition.start();
-
-            } catch (error) {
-
-                console.error(
-                    "Voice input error:",
-                    error
-                );
-            }
-        });
-
-        recognition.onstart = () => {
-
-            isListening = true;
-
-            voiceInputButton.textContent = "🔴";
-
-            voiceInputButton.title = "Listening...";
-        };
-
-        recognition.onresult = event => {
-
-            const spokenText =
-                event.results[0][0].transcript;
-
-            chatInput.value = spokenText;
-
-            chatInput.focus();
-        };
-
-        recognition.onerror = event => {
-
-            console.error(
-                "Speech recognition error:",
-                event.error
-            );
-        };
-
-        recognition.onend = () => {
-
-            isListening = false;
-
-            voiceInputButton.textContent = "🎤";
-
-            voiceInputButton.title =
-                "Speak to JESSY AI";
-        };
-
-    } else {
-
-        voiceInputButton.disabled = true;
-
-        voiceInputButton.title =
-            "Voice recognition is not supported in this browser.";
+function setVoiceCommandStatus(message) {
+    if (voiceCommandStatus) {
+        voiceCommandStatus.textContent = message;
     }
 }
 
-// ==========================================
-// VOICE OUTPUT BUTTON
-// ==========================================
+function updateVoiceOutputButton() {
+    if (!voiceOutputButton) return;
+
+    voiceOutputButton.innerHTML =
+        voiceEnabled ? VOICE_ICONS.muted : VOICE_ICONS.speaker;
+    voiceOutputButton.classList.toggle("is-active", voiceEnabled);
+    voiceOutputButton.setAttribute("aria-pressed", String(voiceEnabled));
+    voiceOutputButton.setAttribute(
+        "aria-label",
+        voiceEnabled ? "Turn off voice responses" : "Enable voice responses"
+    );
+    voiceOutputButton.title = voiceEnabled
+        ? "Turn off voice responses"
+        : "Enable voice responses";
+}
+
+function updateWakeWordButton() {
+    if (!wakeWordButton) return;
+
+    wakeWordButton.classList.toggle("is-active", wakeWordEnabled);
+    wakeWordButton.setAttribute("aria-pressed", String(wakeWordEnabled));
+    wakeWordButton.setAttribute(
+        "aria-label",
+        wakeWordEnabled
+            ? "Turn off Hey Jessy voice access"
+            : "Enable Hey Jessy voice access"
+    );
+    wakeWordButton.title = wakeWordEnabled
+        ? "Turn off Hey Jessy voice access"
+        : "Enable Hey Jessy voice access";
+}
+
+function startSpeechRecognition(mode) {
+    if (
+        !recognition ||
+        isListening ||
+        recognitionStarting ||
+        isSending
+    ) {
+        return;
+    }
+
+    recognitionMode = mode;
+    recognition.continuous = mode === "wake";
+    recognition.interimResults = mode === "wake";
+    recognitionStarting = true;
+    microphonePermissionError = false;
+
+    try {
+        recognition.start();
+    } catch (error) {
+        recognitionStarting = false;
+
+        if (error.name !== "InvalidStateError") {
+            console.error("Voice recognition could not start:", error);
+            setVoiceCommandStatus(
+                "Microphone could not start. Check browser microphone permission."
+            );
+        }
+    }
+}
+
+function scheduleWakeWordRestart(delay = 700) {
+    if (!wakeWordEnabled) return;
+
+    window.clearTimeout(wakeRetryTimer);
+    wakeRetryTimer = window.setTimeout(() => {
+        startSpeechRecognition("wake");
+    }, delay);
+}
+
+function handleWakeWordTranscript(spokenText) {
+    const wakeMatch = /\b(?:hey|okay|ok)\s+jess(?:y|ie)\b/i.exec(spokenText);
+
+    if (!wakeMatch) return;
+
+    const command = spokenText
+        .slice(wakeMatch.index + wakeMatch[0].length)
+        .replace(/^[\s,.:;!?-]+/, "")
+        .trim();
+
+    if (!command) {
+        setVoiceCommandStatus("Hey Jessy heard. Say your request.");
+        return;
+    }
+
+    pendingVoiceCommand = command;
+    setVoiceCommandStatus("Heard you. JESSY is preparing a reply.");
+
+    if (isListening) {
+        recognition.stop();
+    }
+}
+
+if (SpeechRecognitionAPI) {
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = "en-IN";
+
+    if (voiceInputButton) {
+        voiceInputButton.innerHTML = VOICE_ICONS.microphone;
+
+        voiceInputButton.addEventListener("click", () => {
+            window.clearTimeout(wakeRetryTimer);
+
+            if (isListening) {
+                if (recognitionMode === "wake") {
+                    pendingDictationStart = true;
+                    setVoiceCommandStatus("Switching to voice dictation...");
+                }
+
+                recognition.stop();
+                return;
+            }
+
+            startSpeechRecognition("dictation");
+        });
+    }
+
+    if (wakeWordButton) {
+        wakeWordButton.innerHTML = VOICE_ICONS.wake;
+        wakeWordButton.addEventListener("click", () => {
+            wakeWordEnabled = !wakeWordEnabled;
+            updateWakeWordButton();
+
+            if (wakeWordEnabled) {
+                voiceEnabled = true;
+                updateVoiceOutputButton();
+                setVoiceCommandStatus(
+                    'Wake phrase on. Your browser is listening for “Hey Jessy”.'
+                );
+
+                if (!isListening && !recognitionStarting) {
+                    startSpeechRecognition("wake");
+                }
+            } else {
+                window.clearTimeout(wakeRetryTimer);
+                setVoiceCommandStatus(
+                    'Wake phrase off. Tap the microphone or enable “Hey Jessy” access.'
+                );
+
+                if (isListening && recognitionMode === "wake") {
+                    recognition.stop();
+                }
+            }
+        });
+    }
+
+    recognition.onstart = () => {
+        recognitionStarting = false;
+        isListening = true;
+
+        if (recognitionMode === "dictation") {
+            voiceInputButton?.classList.add("is-active");
+            setVoiceCommandStatus("Listening. Speak your message.");
+        } else {
+            setVoiceCommandStatus(
+                'Wake phrase on. Your browser is listening for “Hey Jessy”.'
+            );
+        }
+    };
+
+    recognition.onresult = event => {
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            const result = event.results[index];
+            if (!result.isFinal) continue;
+
+            const spokenText = result[0].transcript.trim();
+
+            if (recognitionMode === "wake") {
+                handleWakeWordTranscript(spokenText);
+            } else if (chatInput) {
+                chatInput.value = spokenText;
+                chatInput.focus();
+                setVoiceCommandStatus("Voice message ready. Review it, then send.");
+            }
+        }
+    };
+
+    recognition.onerror = event => {
+        recognitionStarting = false;
+        console.error("Speech recognition error:", event.error);
+
+        if (["not-allowed", "service-not-allowed", "audio-capture"].includes(event.error)) {
+            microphonePermissionError = true;
+            wakeWordEnabled = false;
+            updateWakeWordButton();
+            setVoiceCommandStatus(
+                "Microphone access is blocked. Allow it in browser settings, then try again."
+            );
+        }
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        recognitionStarting = false;
+        voiceInputButton?.classList.remove("is-active");
+
+        if (pendingVoiceCommand) {
+            const command = pendingVoiceCommand;
+            pendingVoiceCommand = "";
+            sendMessage(command);
+            return;
+        }
+
+        if (pendingDictationStart) {
+            pendingDictationStart = false;
+            startSpeechRecognition("dictation");
+            return;
+        }
+
+        if (microphonePermissionError) {
+            microphonePermissionError = false;
+            return;
+        }
+
+        if (wakeWordEnabled) {
+            scheduleWakeWordRestart();
+        } else if (recognitionMode === "dictation") {
+            setVoiceCommandStatus(
+                'Enable voice command to let your browser listen for “Hey Jessy” while this page is open.'
+            );
+        }
+    };
+} else {
+    if (voiceInputButton) {
+        voiceInputButton.disabled = true;
+        voiceInputButton.title = "Voice recognition is not supported in this browser.";
+    }
+
+    if (wakeWordButton) {
+        wakeWordButton.disabled = true;
+        wakeWordButton.title = "Wake phrase is not supported in this browser.";
+    }
+
+    setVoiceCommandStatus(
+        "Voice recognition is not supported in this browser. Try a recent version of Chrome or Edge."
+    );
+}
 
 if (voiceOutputButton) {
+    updateVoiceOutputButton();
 
     voiceOutputButton.addEventListener("click", () => {
-
         voiceEnabled = !voiceEnabled;
+        updateVoiceOutputButton();
 
-        voiceOutputButton.textContent =
-            voiceEnabled ? "🔇" : "🔊";
-
-        voiceOutputButton.title =
-            voiceEnabled
-                ? "Turn off voice responses"
-                : "Enable voice responses";
-
-        voiceOutputButton.setAttribute(
-            "aria-pressed",
-            String(voiceEnabled)
-        );
-
-        if (
-            !voiceEnabled &&
-            window.speechSynthesis
-        ) {
-
+        if (!voiceEnabled && window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }
     });

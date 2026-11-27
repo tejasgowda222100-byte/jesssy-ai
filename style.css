@@ -188,6 +188,36 @@
     font-size: 11px;
 }
 
+.voice-control svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: middle;
+}
+
+.chat-form button.voice-control.is-active {
+    background: linear-gradient(145deg, #11a9d5, #3479ef);
+    box-shadow: 0 0 18px #36b9ff88;
+}
+
+.chat-form button.voice-control:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.voice-command-status {
+    margin: 0;
+    padding: 0 12px 10px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+}
+
 .message.assistant a {
     color: #65caff;
     text-decoration: underline;

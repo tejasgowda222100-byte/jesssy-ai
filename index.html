@@ -121,19 +121,33 @@
     <button
         type="button"
         id="voiceInputButton"
+        class="voice-control"
         title="Speak to JESSY AI"
         aria-label="Voice input"
     >
-        🎤
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"></path></svg>
+    </button>
+
+    <button
+        type="button"
+        id="wakeWordButton"
+        class="voice-control wake-word-button"
+        title="Enable Hey Jessy voice access"
+        aria-label="Enable Hey Jessy voice access"
+        aria-pressed="false"
+    >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10v4m4-8v12m4-15v18m4-14v10m4-7v4"></path></svg>
     </button>
 
     <button
         type="button"
         id="voiceOutputButton"
+        class="voice-control"
         title="Enable voice responses"
         aria-label="Enable voice responses"
+        aria-pressed="false"
     >
-        🔊
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path><path d="M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"></path></svg>
     </button>
 
     <button
@@ -145,6 +159,9 @@
     </button>
 
 </form>
+<p id="voiceCommandStatus" class="voice-command-status" aria-live="polite">
+    Enable voice command to let your browser listen for “Hey Jessy” while this page is open.
+</p>
     <input
         id="chatInput"
         type="text"

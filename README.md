@@ -6,6 +6,10 @@ JESSY AI is a multilingual assistant created by UBINTZE TECHNOLOGIES, founded by
 
 Enable **Search the web** below the chat box to ask JESSY AI to use current web information for that message. The option is off by default. Search uses Groq's built-in `browser_search` tool with `openai/gpt-oss-20b`; it needs no separate search service or search API key. Normal chat and language detection continue to use the existing Groq setup.
 
+## Voice access
+
+Tap the waveform button to enable **Hey Jessy** wake phrase access, then say “Hey Jessy, plan my trip today.” The browser needs microphone permission, and the page must remain open. Wake phrase access is off until the user enables it. The feature uses browser speech recognition and automatically turns on spoken replies; the microphone, wake phrase, and speaker controls can be turned off independently. Browser support varies; recent Chrome and Edge versions are recommended.
+
 ## Provider configuration
 
 The backend reads `GROQ_API_KEY` from its environment. It never belongs in frontend files or Git. The model defaults to `openai/gpt-oss-20b`; optionally set `GROQ_MODEL` to another Groq model that supports browser search.

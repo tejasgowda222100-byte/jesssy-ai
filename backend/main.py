@@ -47,6 +47,10 @@ OVERPASS_FALLBACK_API_URL = os.getenv(
     "OVERPASS_FALLBACK_API_URL",
     "https://overpass.private.coffee/api/interpreter"
 )
+OVERPASS_SECONDARY_API_URL = os.getenv(
+    "OVERPASS_SECONDARY_API_URL",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+)
 OSM_USER_AGENT = "JESSY-AI/1.0 (https://jesssy-ai.onrender.com)"
 OSM_CACHE_TTL_SECONDS = 900
 _OSM_CACHE = {}
@@ -391,6 +395,7 @@ def search_trip_places(request: PlaceSearchRequest):
         overpass_urls = list(dict.fromkeys([
             OVERPASS_API_URL,
             OVERPASS_FALLBACK_API_URL,
+            OVERPASS_SECONDARY_API_URL,
         ]))
         for overpass_url in overpass_urls:
             overpass_request = Request(
@@ -404,7 +409,7 @@ def search_trip_places(request: PlaceSearchRequest):
                 method="POST",
             )
             try:
-                with urlopen(overpass_request, timeout=18) as response:
+                with urlopen(overpass_request, timeout=15) as response:
                     provider_data = json.loads(response.read().decode("utf-8"))
                 break
             except HTTPError as error:

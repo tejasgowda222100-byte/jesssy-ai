@@ -1234,6 +1234,13 @@ const tripProviderStatus = document.getElementById("tripProviderStatus");
 const tripProviderResults = document.getElementById("tripProviderResults");
 const tripPosterPreview = document.getElementById("tripPosterPreview");
 const tripPosterDownload = document.getElementById("tripPosterDownload");
+const destinationPhotoCard = document.getElementById("destinationPhotoCard");
+const tripDestinationPhoto = document.getElementById("tripDestinationPhoto");
+const tripDestinationPhotoCredit = document.getElementById("tripDestinationPhotoCredit");
+const tripDestinationPhotoLink = document.getElementById("tripDestinationPhotoLink");
+const tripPlanMode = document.getElementById("tripPlanMode");
+const tripPlanSteps = document.getElementById("tripPlanSteps");
+const tripPlanNotice = document.getElementById("tripPlanNotice");
 
 const TRIP_PROVIDER_SITES = {
     flight: [
@@ -1270,6 +1277,127 @@ const TRIP_PROVIDER_SITES = {
         { name: "Fandango", domain: "fandango.com" }
     ]
 };
+
+const DESTINATION_PHOTO_CACHE = new Map();
+
+function formatTripDate(value) {
+    if (!value) return "Not selected";
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return value;
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+    });
+}
+
+function renderJourneyPlan(category, origin, destination, startDate, endDate, travellers) {
+    if (!tripPlanSteps || !tripPlanMode || !tripPlanNotice) return;
+
+    const labels = {
+        flight: "Flight trip",
+        train: "Train trip",
+        bus: "Bus trip",
+        hotel: "Stay plan",
+        restaurant: "Dining plan",
+        movie: "Movie outing"
+    };
+    tripPlanMode.textContent = labels[category] || "Trip plan";
+    tripPlanSteps.replaceChildren();
+
+    const details = [];
+    if (["flight", "train", "bus"].includes(category)) {
+        details.push({ title: "Route", value: `${origin} → ${destination}` });
+        details.push({ title: "Travel date", value: formatTripDate(startDate) });
+        if (endDate) details.push({ title: "Return / end date", value: formatTripDate(endDate) });
+        details.push({ title: "Passengers", value: `${travellers}` });
+    } else if (category === "hotel") {
+        details.push({ title: "Destination", value: destination });
+        details.push({ title: "Check-in", value: formatTripDate(startDate) });
+        details.push({ title: "Check-out", value: formatTripDate(endDate) });
+        details.push({ title: "Guests", value: `${travellers}` });
+    } else {
+        details.push({ title: "Destination", value: destination });
+        if (startDate) details.push({ title: "Date", value: formatTripDate(startDate) });
+        details.push({ title: "People", value: `${travellers}` });
+    }
+
+    details.forEach(detail => {
+        const item = document.createElement("li");
+        item.textContent = `${detail.title}: ${detail.value}`;
+        tripPlanSteps.append(item);
+    });
+
+    tripPlanNotice.textContent = ["flight", "train", "bus"].includes(category)
+        ? "Plan built from your entries. Live departure times, delays, prices, seat availability and payment are not verified in JESSY."
+        : "Plan built from your entries. Confirm opening times, availability, prices and any booking directly with the provider.";
+}
+
+async function loadDestinationPhoto(destination) {
+    if (!destinationPhotoCard || !tripDestinationPhoto || !tripDestinationPhotoLink) return;
+    destinationPhotoCard.hidden = true;
+
+    const cacheKey = destination.trim().toLocaleLowerCase();
+    if (!cacheKey) return;
+    if (DESTINATION_PHOTO_CACHE.has(cacheKey)) {
+        const cached = DESTINATION_PHOTO_CACHE.get(cacheKey);
+        tripDestinationPhoto.src = cached.imageUrl;
+        tripDestinationPhoto.alt = `Wikimedia Commons destination photo for ${destination}`;
+        tripDestinationPhotoLink.href = cached.descriptionUrl;
+        tripDestinationPhotoCredit.textContent = cached.credit;
+        destinationPhotoCard.hidden = false;
+        return;
+    }
+
+    const params = new URLSearchParams({
+        action: "query",
+        format: "json",
+        origin: "*",
+        generator: "search",
+        gsrsearch: destination,
+        gsrnamespace: "6",
+        gsrlimit: "5",
+        prop: "imageinfo",
+        iiprop: "url|extmetadata",
+        iiurlwidth: "1200"
+    });
+
+    try {
+        const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const pages = Object.values(data.query?.pages || {});
+        const candidates = pages
+            .filter(page => !/\b(logo|map|flag|coat of arms)\b/i.test(page.title || ""))
+            .map(page => ({ page, info: page.imageinfo?.[0] }))
+            .filter(item => item.info?.thumburl && item.info?.descriptionurl);
+        const selected = candidates[0];
+        if (!selected) return;
+
+        const imageUrl = new URL(selected.info.thumburl);
+        const descriptionUrl = new URL(selected.info.descriptionurl);
+        if (imageUrl.protocol !== "https:" || imageUrl.hostname !== "upload.wikimedia.org") return;
+        if (descriptionUrl.protocol !== "https:" || descriptionUrl.hostname !== "commons.wikimedia.org") return;
+
+        const metadata = selected.info.extmetadata || {};
+        const artistMarkup = metadata.Artist?.value || "";
+        const artist = artistMarkup
+            ? new DOMParser().parseFromString(artistMarkup, "text/html").body.textContent.trim()
+            : "Wikimedia Commons contributor";
+        const license = metadata.LicenseShortName?.value || "license details on Wikimedia Commons";
+        const credit = `Photo: ${artist.slice(0, 180)} · ${license}`;
+        const photo = { imageUrl: imageUrl.href, descriptionUrl: descriptionUrl.href, credit };
+        DESTINATION_PHOTO_CACHE.set(cacheKey, photo);
+
+        tripDestinationPhoto.src = photo.imageUrl;
+        tripDestinationPhoto.alt = `Wikimedia Commons photo search result for ${destination}`;
+        tripDestinationPhotoLink.href = photo.descriptionUrl;
+        tripDestinationPhotoCredit.textContent = credit;
+        destinationPhotoCard.hidden = false;
+    } catch {
+        destinationPhotoCard.hidden = true;
+    }
+}
 
 function createTripInspirationImage(destination) {
     if (!tripPosterPreview || !tripPosterDownload) return;
@@ -1490,10 +1618,14 @@ if (tripSearchForm) {
         tripProviderOutput.hidden = false;
         tripProviderStatus.textContent = "Preparing provider searches and your travel postcard…";
         createTripInspirationImage(location);
+        renderJourneyPlan(category, origin, location, startDate, endDate, travellers);
+        void loadDestinationPhoto(location);
         const providerQuery = buildProviderQuery(category, origin, location, startDate, endDate, travellers);
         renderProviderSearchLinks(category, providerQuery);
         const categoryLabel = tripCategorySelect.selectedOptions[0]?.textContent || "travel";
-        tripProviderStatus.textContent = `Search ${categoryLabel.toLowerCase()} on these provider sites. Their pages show current results and checkout options.`;
+        tripProviderStatus.textContent = ["flight", "train", "bus"].includes(category)
+            ? `Search ${categoryLabel.toLowerCase()} on these provider sites. JESSY cannot verify live times, seats or fares yet.`
+            : `Search ${categoryLabel.toLowerCase()} on these provider sites. Confirm current details and checkout with the provider.`;
 
         if (["hotel", "restaurant"].includes(category)) {
             tripSearchStatus.textContent = "Searching basic OpenStreetMap place listings…";
@@ -1519,6 +1651,9 @@ if (tripSearchForm) {
             }
         }
 
+        if (!["hotel", "restaurant"].includes(category)) {
+            tripSearchStatus.textContent = "JESSY prepared your journey plan and provider links. Live ticket inventory and in-app UPI payment are not connected.";
+        }
         tripSearchForm.querySelector("button[type='submit']").disabled = false;
     });
 }

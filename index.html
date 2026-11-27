@@ -208,7 +208,7 @@
           </label>
           <button type="submit" class="trip-search-button">Find options</button>
         </form>
-        <p class="provider-safety-note">These links open web searches focused on provider sites. Confirm the final fare, availability, taxes, fees and cancellation terms on the provider’s own site. Payment stays with the provider; JESSY never collects card details.</p>
+        <p class="provider-safety-note">Live vehicle times, seats, fares and in-app UPI checkout are not connected yet. Provider links may help you find current options; verify the final total and terms on the provider’s own site. Never share a UPI PIN with JESSY.</p>
         <div id="tripProviderOutput" class="trip-provider-output" hidden>
           <div class="trip-inspiration-card">
             <img id="tripPosterPreview" alt="Generated JESSY travel inspiration illustration">
@@ -218,6 +218,25 @@
               <a id="tripPosterDownload" class="place-link" download="jessy-trip-postcard.png">Download postcard</a>
             </div>
           </div>
+          <div id="destinationPhotoCard" class="destination-photo-card" hidden>
+            <img id="tripDestinationPhoto" alt="" referrerpolicy="no-referrer">
+            <div>
+              <strong>Destination photo</strong>
+              <p id="tripDestinationPhotoCredit">Photo source and license details are provided by Wikimedia Commons.</p>
+              <a id="tripDestinationPhotoLink" class="place-link" target="_blank" rel="noopener noreferrer">View photo source and license ↗</a>
+            </div>
+          </div>
+          <section class="journey-plan-card" aria-labelledby="journeyPlanTitle">
+            <div class="journey-plan-heading">
+              <div>
+                <div class="eyebrow">YOUR JOURNEY</div>
+                <h4 id="journeyPlanTitle">Trip plan</h4>
+              </div>
+              <span id="tripPlanMode" class="trip-mode-badge"></span>
+            </div>
+            <ol id="tripPlanSteps" class="journey-plan-steps"></ol>
+            <p id="tripPlanNotice" class="journey-plan-notice"></p>
+          </section>
           <p id="tripProviderStatus" class="trip-search-status" aria-live="polite"></p>
           <div id="tripProviderResults" class="trip-provider-results" aria-live="polite"></div>
         </div>

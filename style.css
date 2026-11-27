@@ -516,6 +516,118 @@
     line-height: 1.6;
 }
 
+.destination-photo-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(180px, 1fr);
+    align-items: center;
+    gap: 18px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: #0b1426;
+}
+
+.destination-photo-card[hidden] {
+    display: none;
+}
+
+.destination-photo-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1200 / 630;
+    object-fit: cover;
+    border-radius: 9px;
+    background: #101a30;
+}
+
+.destination-photo-card strong {
+    color: #f3f7ff;
+    font: 600 16px 'Space Grotesk';
+}
+
+.destination-photo-card p {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.journey-plan-card {
+    margin-top: 12px;
+    padding: 18px;
+    border: 1px solid rgba(101, 181, 255, .22);
+    border-radius: 13px;
+    background: linear-gradient(145deg, rgba(21, 48, 80, .78), rgba(13, 22, 40, .95));
+}
+
+.journey-plan-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.journey-plan-heading h4 {
+    margin: 5px 0 0;
+    color: #f3f7ff;
+    font: 600 17px 'Space Grotesk';
+}
+
+.trip-mode-badge {
+    padding: 7px 10px;
+    border: 1px solid rgba(117, 187, 255, .32);
+    border-radius: 999px;
+    background: rgba(39, 107, 168, .22);
+    color: #a6d7ff;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.journey-plan-steps {
+    display: grid;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: journey-step;
+}
+
+.journey-plan-steps li {
+    position: relative;
+    min-height: 40px;
+    padding: 10px 12px 10px 42px;
+    border-left: 2px solid rgba(101, 181, 255, .42);
+    color: #d4e0f4;
+    font-size: 12px;
+    line-height: 1.55;
+    counter-increment: journey-step;
+}
+
+.journey-plan-steps li::before {
+    position: absolute;
+    top: 7px;
+    left: 8px;
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border: 1px solid rgba(101, 181, 255, .42);
+    border-radius: 50%;
+    background: #101e35;
+    color: #9bd1ff;
+    content: counter(journey-step);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.journey-plan-notice {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.6;
+}
+
 .trip-provider-results {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -594,5 +706,6 @@
     .trip-search-form { grid-template-columns: 1fr; }
     .trip-results { grid-template-columns: 1fr; }
     .trip-search-button { width: 100%; }
-    .trip-inspiration-card { grid-template-columns: 1fr; }
+    .trip-inspiration-card,
+    .destination-photo-card { grid-template-columns: 1fr; }
 }

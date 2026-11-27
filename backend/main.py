@@ -1,9 +1,12 @@
 import logging
 import json
 import os
+import threading
+import time
 from pathlib import Path
 from typing import Literal
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
@@ -31,6 +34,21 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("jessy_ai")
+
+NOMINATIM_API_URL = os.getenv(
+    "NOMINATIM_API_URL",
+    "https://nominatim.openstreetmap.org/search"
+)
+OVERPASS_API_URL = os.getenv(
+    "OVERPASS_API_URL",
+    "https://overpass-api.de/api/interpreter"
+)
+OSM_USER_AGENT = "JESSY-AI/1.0 (https://jesssy-ai.onrender.com)"
+OSM_CACHE_TTL_SECONDS = 900
+_OSM_CACHE = {}
+_OSM_SEARCH_LOCK = threading.Lock()
+_NOMINATIM_RATE_LOCK = threading.Lock()
+_LAST_NOMINATIM_REQUEST = 0.0
 
 
 # ------------------------------------------
@@ -283,84 +301,166 @@ def health():
 @app.post("/trip/places")
 def search_trip_places(request: PlaceSearchRequest):
 
-    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    location = request.location.strip()
+    cache_key = (request.category, location.casefold())
 
-    if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="Live place search is not configured yet."
+    with _OSM_SEARCH_LOCK:
+        now = time.monotonic()
+        cached = _OSM_CACHE.get(cache_key)
+        if cached and cached[0] > now:
+            return cached[1]
+
+        for key, value in list(_OSM_CACHE.items()):
+            if value[0] <= now:
+                _OSM_CACHE.pop(key, None)
+
+        geocode_params = urlencode({
+            "q": location,
+            "format": "jsonv2",
+            "limit": 1,
+        })
+        geocode_request = Request(
+            f"{NOMINATIM_API_URL}?{geocode_params}",
+            headers={
+                "User-Agent": OSM_USER_AGENT,
+                "Accept": "application/json",
+            },
         )
 
-    place_type = "hotel" if request.category == "hotel" else "restaurant"
-    search_word = "hotels" if request.category == "hotel" else "restaurants"
-    payload = json.dumps({
-        "textQuery": f"{search_word} in {request.location.strip()}",
-        "includedType": place_type,
-        "strictTypeFiltering": True,
-        "languageCode": "en",
-        "pageSize": 20,
-    }).encode("utf-8")
+        global _LAST_NOMINATIM_REQUEST
+        with _NOMINATIM_RATE_LOCK:
+            elapsed = time.monotonic() - _LAST_NOMINATIM_REQUEST
+            if elapsed < 1.05:
+                time.sleep(1.05 - elapsed)
+            _LAST_NOMINATIM_REQUEST = time.monotonic()
 
-    provider_request = Request(
-        "https://places.googleapis.com/v1/places:searchText",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "X-Goog-Api-Key": api_key,
-            "X-Goog-FieldMask": (
-                "places.id,places.displayName,places.formattedAddress,"
-                "places.rating,places.userRatingCount,places.priceLevel,"
-                "places.websiteUri,places.googleMapsUri,"
-                "places.currentOpeningHours.openNow"
-            ),
-        },
-        method="POST",
-    )
+        try:
+            with urlopen(geocode_request, timeout=8) as response:
+                geocode_results = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            logger.warning("OpenStreetMap geocoder returned HTTP %s", error.code)
+            raise HTTPException(
+                status_code=503,
+                detail="OpenStreetMap search is busy. Please try again shortly."
+            ) from error
+        except (URLError, TimeoutError, json.JSONDecodeError) as error:
+            logger.warning("OpenStreetMap geocoding failed: %s", type(error).__name__)
+            raise HTTPException(
+                status_code=502,
+                detail="OpenStreetMap search is temporarily unavailable."
+            ) from error
 
-    try:
-        with urlopen(provider_request, timeout=12) as provider_response:
-            provider_data = json.loads(provider_response.read().decode("utf-8"))
-    except HTTPError as error:
-        logger.warning("Google Places returned HTTP %s", error.code)
-        raise HTTPException(
-            status_code=502,
-            detail="The place search provider could not complete the search."
-        ) from error
-    except (URLError, TimeoutError, json.JSONDecodeError) as error:
-        logger.warning("Google Places request failed: %s", type(error).__name__)
-        raise HTTPException(
-            status_code=502,
-            detail="The place search provider is temporarily unavailable."
-        ) from error
+        if not geocode_results:
+            raise HTTPException(
+                status_code=404,
+                detail="Destination not found. Check the spelling and try again."
+            )
 
-    places = []
-    for place in provider_data.get("places", []):
-        opening_hours = place.get("currentOpeningHours") or {}
-        places.append({
-            "id": place.get("id"),
-            "name": (place.get("displayName") or {}).get("text", "Place"),
-            "address": place.get("formattedAddress", ""),
-            "rating": place.get("rating"),
-            "rating_count": place.get("userRatingCount"),
-            "price_level": place.get("priceLevel"),
-            "open_now": opening_hours.get("openNow"),
-            "website": place.get("websiteUri"),
-            "maps_url": place.get("googleMapsUri"),
-        })
+        try:
+            latitude = float(geocode_results[0]["lat"])
+            longitude = float(geocode_results[0]["lon"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise HTTPException(
+                status_code=502,
+                detail="OpenStreetMap returned an invalid destination."
+            ) from error
 
-    return {
-        "location": request.location.strip(),
-        "category": request.category,
-        "places": places,
-        "source": "Google Places",
-        "availability_verified": False,
-        "message": (
-            "These are place listings. Hotel room availability, nightly rates, "
-            "and booking charges are not confirmed by this search."
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            raise HTTPException(
+                status_code=502,
+                detail="OpenStreetMap returned an invalid destination."
+            )
+
+        place_filter = (
+            '["tourism"~"^(hotel|hostel|guest_house|motel|apartment|chalet)$"]'
             if request.category == "hotel"
-            else "Restaurant listing details may change; confirm directly with the venue."
-        ),
-    }
+            else '["amenity"~"^(restaurant|cafe|fast_food|food_court)$"]'
+        )
+        overpass_query = (
+            "[out:json][timeout:12];"
+            f"(nwr(around:10000,{latitude},{longitude}){place_filter};);"
+            "out center tags 30;"
+        )
+        overpass_request = Request(
+            OVERPASS_API_URL,
+            data=urlencode({"data": overpass_query}).encode("utf-8"),
+            headers={
+                "User-Agent": OSM_USER_AGENT,
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            method="POST",
+        )
+
+        try:
+            with urlopen(overpass_request, timeout=18) as response:
+                provider_data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            logger.warning("Overpass returned HTTP %s", error.code)
+            raise HTTPException(
+                status_code=503,
+                detail="OpenStreetMap search is busy. Please try again shortly."
+            ) from error
+        except (URLError, TimeoutError, json.JSONDecodeError) as error:
+            logger.warning("Overpass request failed: %s", type(error).__name__)
+            raise HTTPException(
+                status_code=502,
+                detail="OpenStreetMap search is temporarily unavailable."
+            ) from error
+
+        resolved_location = geocode_results[0].get("display_name", location)
+        places = []
+        for element in provider_data.get("elements", []):
+            tags = element.get("tags") or {}
+            name = tags.get("name") or tags.get("brand") or tags.get("operator")
+            if not name:
+                continue
+
+            street = " ".join(filter(None, [
+                tags.get("addr:housenumber"),
+                tags.get("addr:street"),
+            ]))
+            address = ", ".join(filter(None, [
+                street,
+                tags.get("addr:city") or tags.get("addr:town"),
+                tags.get("addr:postcode"),
+            ]))
+            osm_type = element.get("type")
+            osm_id = element.get("id")
+            if osm_type not in {"node", "way", "relation"} or not osm_id:
+                continue
+
+            places.append({
+                "id": f"{osm_type}/{osm_id}",
+                "name": name,
+                "address": address or resolved_location,
+                "category_detail": (
+                    tags.get("cuisine")
+                    if request.category == "restaurant"
+                    else None
+                ),
+                "stars": tags.get("stars"),
+                "opening_hours": tags.get("opening_hours"),
+                "website": tags.get("contact:website") or tags.get("website"),
+                "maps_url": f"https://www.openstreetmap.org/{osm_type}/{osm_id}",
+            })
+
+        result = {
+            "location": location,
+            "resolved_location": resolved_location,
+            "category": request.category,
+            "places": places,
+            "source": "OpenStreetMap contributors",
+            "availability_verified": False,
+            "message": (
+                "Listings may be incomplete. Room rates, booking fees, and "
+                "availability are not provided."
+                if request.category == "hotel"
+                else "Listings may be incomplete or out of date; confirm directly with the venue."
+            ),
+        }
+        _OSM_CACHE[cache_key] = (time.monotonic() + OSM_CACHE_TTL_SECONDS, result)
+        return result
 
 
 # ------------------------------------------

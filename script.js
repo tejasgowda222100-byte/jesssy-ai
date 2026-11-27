@@ -1253,7 +1253,7 @@ function renderPlaceResults(data) {
         return;
     }
 
-    tripSearchStatus.textContent = `${data.places.length} listings found for ${data.location}.`;
+    tripSearchStatus.textContent = `${data.places.length} OpenStreetMap listings found near ${data.resolved_location || data.location}.`;
 
     data.places.forEach(place => {
         const card = document.createElement("article");
@@ -1273,18 +1273,9 @@ function renderPlaceResults(data) {
         const details = document.createElement("p");
         details.className = "place-details";
         const detailParts = [];
-        if (typeof place.rating === "number") {
-            const count = Number.isInteger(place.rating_count)
-                ? ` (${place.rating_count.toLocaleString()} reviews)`
-                : "";
-            detailParts.push(`★ ${place.rating.toFixed(1)}${count}`);
-        }
-        if (place.price_level) {
-            detailParts.push(place.price_level.replace("PRICE_LEVEL_", "").toLowerCase().replaceAll("_", " "));
-        }
-        if (typeof place.open_now === "boolean") {
-            detailParts.push(place.open_now ? "Open now" : "Not currently open");
-        }
+        if (place.category_detail) detailParts.push(place.category_detail.replaceAll(";", ", "));
+        if (place.stars) detailParts.push(`${place.stars} listed stars`);
+        if (place.opening_hours) detailParts.push(`Hours: ${place.opening_hours}`);
         details.textContent = detailParts.join(" · ");
         if (detailParts.length) card.append(details);
 
@@ -1324,9 +1315,13 @@ if (tripSearchForm) {
             }
             renderPlaceResults(data);
         } catch (error) {
-            tripSearchStatus.textContent = error.message === "Live place search is not configured yet."
-                ? "Live place search is not set up yet. The site owner needs to add the Google Places key in Render."
-                : "JESSY couldn’t reach the place search right now. Please try again shortly.";
+            if (error.message?.includes("Destination not found")) {
+                tripSearchStatus.textContent = "Destination not found. Check the spelling or include the country.";
+            } else if (error.message?.includes("busy")) {
+                tripSearchStatus.textContent = "The free map search is busy right now. Please try again shortly.";
+            } else {
+                tripSearchStatus.textContent = "JESSY couldn’t reach the free map search. Please try again shortly.";
+            }
         } finally {
             tripSearchForm.querySelector("button[type='submit']").disabled = false;
         }

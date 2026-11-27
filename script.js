@@ -54,9 +54,11 @@ let recognitionStarting = false;
 let microphonePermissionError = false;
 let recognitionMode = "dictation";
 let wakeWordEnabled = false;
+let wakeCommandPending = false;
 let pendingDictationStart = false;
 let pendingVoiceCommand = "";
 let wakeRetryTimer = null;
+let wakeCommandTimer = null;
 
 const VOICE_ICONS = {
     microphone: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"></path></svg>',
@@ -1010,9 +1012,24 @@ function scheduleWakeWordRestart(delay = 700) {
 }
 
 function handleWakeWordTranscript(spokenText) {
-    const wakeMatch = /\b(?:hey|okay|ok)\s+jess(?:y|ie)\b/i.exec(spokenText);
+    const wakeMatch = /\b(?:hey|okay|ok)[\s,.'-]+jess(?:y|ie|e|i)\b/i.exec(spokenText);
 
-    if (!wakeMatch) return;
+    if (!wakeMatch) {
+        if (!wakeCommandPending) return;
+
+        const followUpCommand = spokenText.trim();
+        if (!followUpCommand) return;
+
+        wakeCommandPending = false;
+        window.clearTimeout(wakeCommandTimer);
+        pendingVoiceCommand = followUpCommand;
+        setVoiceCommandStatus("Heard you. JESSY is preparing a reply.");
+
+        if (isListening) {
+            recognition.stop();
+        }
+        return;
+    }
 
     const command = spokenText
         .slice(wakeMatch.index + wakeMatch[0].length)
@@ -1020,10 +1037,17 @@ function handleWakeWordTranscript(spokenText) {
         .trim();
 
     if (!command) {
-        setVoiceCommandStatus("Hey Jessy heard. Say your request.");
+        wakeCommandPending = true;
+        window.clearTimeout(wakeCommandTimer);
+        wakeCommandTimer = window.setTimeout(() => {
+            wakeCommandPending = false;
+        }, 12000);
+        setVoiceCommandStatus("Hey Jessy heard. Say your request now.");
         return;
     }
 
+    wakeCommandPending = false;
+    window.clearTimeout(wakeCommandTimer);
     pendingVoiceCommand = command;
     setVoiceCommandStatus("Heard you. JESSY is preparing a reply.");
 
@@ -1074,6 +1098,8 @@ if (SpeechRecognitionAPI) {
                 }
             } else {
                 window.clearTimeout(wakeRetryTimer);
+                window.clearTimeout(wakeCommandTimer);
+                wakeCommandPending = false;
                 setVoiceCommandStatus(
                     'Wake phrase off. Tap the microphone or enable “Hey Jessy” access.'
                 );

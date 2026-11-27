@@ -10,6 +10,12 @@ Enable **Search the web** below the chat box to ask JESSY AI to use current web 
 
 Tap the waveform button to enable **Hey Jessy** wake phrase access, then say “Hey Jessy, plan my trip today.” The browser needs microphone permission, and the page must remain open. Wake phrase access is off until the user enables it. The feature uses browser speech recognition and automatically turns on spoken replies; the microphone, wake phrase, and speaker controls can be turned off independently. Browser support varies; recent Chrome and Edge versions are recommended.
 
+### Open JESSY AI with a Windows wake phrase
+
+The browser cannot hear a wake phrase while its page is closed. On Windows, the optional `desktop/HeyJessyWake.ps1` helper uses the built-in Windows speech recognizer to open the JESSY AI website when it hears “Hey Jessy.” It listens only while the user runs the script; press Ctrl+C in its PowerShell window to stop it. The helper does not send audio to JESSY AI or a separate speech service. After the page opens, enable the page's **Hey Jessy** voice access and allow microphone permission if prompted to continue hands-free chat. Windows speech recognition must be configured for a supported language.
+
+To start it, open PowerShell in the repository folder and run `.desktop\HeyJessyWake.ps1`. If Windows blocks local scripts, use the current PowerShell window's process-only policy with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned`, then run the script again. No API keys or extra provider setup are needed.
+
 ## Provider configuration
 
 The backend reads `GROQ_API_KEY` from its environment. It never belongs in frontend files or Git. The model defaults to `openai/gpt-oss-20b`; optionally set `GROQ_MODEL` to another Groq model that supports browser search.

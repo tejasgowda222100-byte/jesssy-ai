@@ -1282,6 +1282,7 @@ const TRIP_PROVIDER_SITES = {
 const TTD_ANNAPRASADAM_URL = "https://www.tirumala.org/SRIVENKATESWARAANNAPRASADAMTRUST.aspx";
 const TTD_ACCOMMODATION_URL = "https://www.tirumala.org/accomdationattirumala.aspx";
 const TTD_NEWS_URL = "https://news.tirumala.org/";
+const TTD_NOVEMBER_2026_URL = "https://news.tirumala.org/2026/11/";
 
 const DESTINATION_PHOTO_CACHE = new Map();
 
@@ -1398,6 +1399,10 @@ function renderDailyPlan(destination, origin, startDate, endDate) {
             if (isTirupati && getJourneyDateKey(day.date) === "2026-11-27") {
                 event.append(document.createTextNode(" · TTD lists Sri Andal Ammavaru's procession at 6:00 PM in Tirupati."));
             }
+            if (isTirupati && getJourneyDateKey(day.date) === "2026-11-29") {
+                event.append(document.createTextNode(" · TTD lists Karthika Vana Bhojanam at Paruveta Mandapam near Gogarbham; Snapana Tirumanjanam is listed for 11:00 AM–12:00 PM."));
+                addJourneyLink(event, "November TTD notice", TTD_NOVEMBER_2026_URL);
+            }
             schedule.append(event);
             addMealRow(schedule, "19:00", "Dinner", destination, isTirupati, true);
         } else if (index === days.length - 1) {
@@ -1431,6 +1436,10 @@ function renderDailyPlan(destination, origin, startDate, endDate) {
             if (isTirupati) addJourneyLink(event, "TTD news and events", TTD_NEWS_URL);
             if (isTirupati && getJourneyDateKey(day.date) === "2026-11-27") {
                 event.append(document.createTextNode(" · TTD lists Sri Andal Ammavaru's procession at 6:00 PM in Tirupati."));
+            }
+            if (isTirupati && getJourneyDateKey(day.date) === "2026-11-29") {
+                event.append(document.createTextNode(" · TTD lists Karthika Vana Bhojanam at Paruveta Mandapam near Gogarbham; Snapana Tirumanjanam is listed for 11:00 AM–12:00 PM."));
+                addJourneyLink(event, "November TTD notice", TTD_NOVEMBER_2026_URL);
             }
             schedule.append(event);
             addMealRow(schedule, "12:30", "Lunch", destination, isTirupati, true);

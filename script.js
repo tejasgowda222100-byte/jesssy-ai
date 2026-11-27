@@ -24,6 +24,7 @@ const nav = document.querySelector(".nav");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatMessages = document.getElementById("chatMessages");
+const webSearchToggle = document.getElementById("webSearchToggle");
 
 const newChatButton = document.getElementById("newChatButton");
 const chatSearch = document.getElementById("chatSearch");
@@ -754,7 +755,8 @@ async function sendMessage(text) {
                 body: JSON.stringify({
                     message: text,
                     history: chatHistory,
-                    language: "auto"
+                    language: "auto",
+                    web_search: Boolean(webSearchToggle?.checked)
                 })
             }
         );

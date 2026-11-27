@@ -34,7 +34,7 @@ logger = logging.getLogger("jessy_ai")
 # GROQ AI CONFIGURATION
 # ------------------------------------------
 
-MODEL = "openai/gpt-oss-20b"
+MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -98,6 +98,8 @@ class ChatRequest(BaseModel):
     )
 
     language: str = "auto"
+
+    web_search: bool = False
 
 
 # ------------------------------------------
@@ -303,13 +305,16 @@ def chat(request: ChatRequest):
 
     try:
 
-        response = client.chat.completions.create(
+        completion_options = {
+            "model": MODEL,
+            "messages": messages,
+        }
 
-            model=MODEL,
+        if request.web_search:
+            completion_options["tools"] = [{"type": "browser_search"}]
+            completion_options["tool_choice"] = "required"
 
-            messages=messages
-
-        )
+        response = client.chat.completions.create(**completion_options)
 
         reply = response.choices[0].message.content
 
@@ -326,6 +331,8 @@ def chat(request: ChatRequest):
             "company": "UBINTZE TECHNOLOGIES",
 
             "provider": "Groq",
+
+            "web_search": request.web_search,
 
             "status": "success"
 

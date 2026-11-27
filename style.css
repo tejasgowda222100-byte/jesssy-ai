@@ -169,6 +169,25 @@
     cursor: not-allowed;
 }
 
+.web-search-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 10px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.web-search-option input {
+    accent-color: var(--blue);
+}
+
+.web-search-hint {
+    color: #7183a3;
+    font-size: 11px;
+}
+
 .message.assistant a {
     color: #65caff;
     text-decoration: underline;

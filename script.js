@@ -1415,9 +1415,11 @@ function renderDailyPlan(destination, origin, startDate, endDate) {
             schedule.append(returnTrip);
         } else {
             const morning = document.createElement("li");
-            morning.textContent = isTirupati
+            morning.textContent = isTirupati && index === 1
                 ? "06:00 · travel to Tirumala for your booked darshan slot; queue time and entry depend on TTD's live instructions."
-                : `09:00 · visit a top local attraction in ${destination}; check today's opening hours.`;
+                : isTirupati
+                    ? "07:00 · explore Tirupati town temples or a nearby place; check today's opening hours and travel time."
+                    : `09:00 · visit a local attraction in ${destination}; check today's opening hours.`;
             addJourneyLink(morning, "Find places on Google Maps", makeGoogleSearchUrl(`places to visit in ${destination}`, true));
             schedule.append(morning);
             addMealRow(schedule, "09:00–10:30", "Breakfast", destination, isTirupati, true);
